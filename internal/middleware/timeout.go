@@ -36,7 +36,7 @@ func isHealthPath(path string) bool {
 		path = path[:len(path)-1]
 	}
 	switch path {
-	case "/health", "/health/live", "/health/ready",
+	case "/ready", "/health", "/health/live", "/health/ready",
 		"/v1/health", "/v1/health/live", "/v1/health/ready":
 		return true
 	}

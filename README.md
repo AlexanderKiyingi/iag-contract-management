@@ -86,3 +86,10 @@ In production:
     http://localhost:3001/oauth/token \
     admin@iag.local changeme
 ```
+
+## Production / Railway
+
+- Production env template: `config/.env.production.example`
+- Railway config-as-code: `railway.toml` (health probe `/ready`, `PORT=4103`)
+- Deploy guide: [docs/RAILWAY.md](docs/RAILWAY.md)
+- Platform wiring: [docs/PLATFORM_INTEGRATION.md](docs/PLATFORM_INTEGRATION.md)

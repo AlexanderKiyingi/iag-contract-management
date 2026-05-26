@@ -62,7 +62,17 @@ check() {
 
 echo "=== contract-management smoke test: $BASE ==="
 
-# Public health
+ROOT="${BASE%/v1}"
+code=$(curl -s -o /dev/null -w "%{http_code}" "$ROOT/ready")
+if [ "$code" = "200" ]; then
+  echo "OK  GET /ready (root) -> $code"
+  PASS=$((PASS + 1))
+else
+  echo "FAIL GET /ready (root) -> $code (want 200)"
+  FAIL=$((FAIL + 1))
+fi
+
+# Public health (under /v1)
 check GET /health 200
 check GET /health/live 200
 check GET /health/ready 200

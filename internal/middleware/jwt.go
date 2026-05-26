@@ -21,8 +21,8 @@ type ContractorLookup interface {
 // verifier (which enforces aud=iag.contract-management) and stores a
 // derived models.Session on the request context.
 //
-// Public endpoints: /health, /health/live, /health/ready. Everything else
-// requires a valid token. Notably: /bootstrap is NO LONGER public.
+// Public endpoints: /ready, /health, /health/live, /health/ready (root and
+// /v1). Everything else requires a valid token. Notably: /bootstrap is NO LONGER public.
 func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if isPublicPath(c.Request.URL.Path) {
@@ -105,7 +105,8 @@ func roleFromGroups(groups []string, isSuperuser, isStaff bool) string {
 
 func isPublicPath(path string) bool {
 	path = strings.TrimRight(path, "/")
-	return path == "/health" ||
+	return path == "/ready" ||
+		path == "/health" ||
 		path == "/health/live" ||
 		path == "/health/ready" ||
 		path == "/v1/health" ||

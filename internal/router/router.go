@@ -54,6 +54,14 @@ func New(
 	// Request log runs last so handler-applied status codes are visible.
 	r.Use(middleware.GinLogger())
 
+	wrap := gin.WrapF
+	// Root probes match other platform services (/ready) for gateway upstream
+	// checks and Railway healthchecks. Canonical API paths remain under /v1.
+	r.GET("/health", wrap(mvc.Health.Check))
+	r.GET("/health/live", wrap(mvc.Health.Live))
+	r.GET("/health/ready", wrap(mvc.Health.Ready))
+	r.GET("/ready", wrap(mvc.Health.Ready))
+
 	registerRoutes(r.Group("/v1"), mvc)
 	return r
 }
