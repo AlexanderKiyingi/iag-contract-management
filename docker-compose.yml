@@ -1,0 +1,22 @@
+# Service-local Postgres for standalone dev — for full-platform dev use
+# deploy/docker-compose.yml in the meta-repo, which provides the shared
+# Postgres, authentication service, OTel collector, and Jaeger.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cm
+      POSTGRES_PASSWORD: cm
+      POSTGRES_DB: cm
+    ports:
+      - "5434:5432"
+    volumes:
+      - cm_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cm -d cm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cm_pg_data:
