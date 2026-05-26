@@ -8,10 +8,16 @@
 | Branch | `main` |
 | Root directory | `/` (repo root — `Dockerfile` and `railway.toml` are here) |
 
+The **standalone** Dockerfile target (default) shallow-clones
+`IAG_multi_backend` at build time to obtain `shared/platform-go` — no monorepo
+checkout is required on Railway.
+
+Optional build arg: `IAG_META_REF` (branch/tag, default `main`).
+
 If wired to `IAG_multi_backend` instead, set **Root directory** to the
-meta-repo root and **Dockerfile path** to
-`services/commercial/contract-management/Dockerfile` (build context must include
-`shared/platform-go`).
+meta-repo root, **Dockerfile path** to
+`services/commercial/contract-management/Dockerfile`, and build target
+**`monorepo`**.
 
 ## Postgres
 
