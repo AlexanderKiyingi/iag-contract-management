@@ -23,6 +23,14 @@ and registers its permission catalogue with the auth service.
 Standalone (no platform infrastructure):
 
 ```bash
+cp .env.example .env   # edit DATABASE_URL if using service-local Postgres
+docker compose up -d   # local Postgres only (port 5434)
+go run .
+```
+
+Or inline env for a one-off run:
+
+```bash
 docker compose up -d                                   # local Postgres only
 DATABASE_URL=postgres://cm:cm@localhost:5434/cm?sslmode=disable \
   JWT_ISSUER=http://localhost:3001 \
