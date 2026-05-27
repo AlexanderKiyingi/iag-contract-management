@@ -3,16 +3,18 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
 )
 
 type FrontendResourcesController struct {
-	model *models.Store
+	model  *models.Store
+	events *events.Bus
 }
 
-func NewFrontendResourcesController(model *models.Store) *FrontendResourcesController {
-	return &FrontendResourcesController{model: model}
+func NewFrontendResourcesController(model *models.Store, bus *events.Bus) *FrontendResourcesController {
+	return &FrontendResourcesController{model: model, events: bus}
 }
 
 func (c *FrontendResourcesController) ListMilestones(w http.ResponseWriter, r *http.Request) {
@@ -371,6 +373,7 @@ func (c *FrontendResourcesController) PostAssistance(w http.ResponseWriter, r *h
 		views.WriteError(w, err)
 		return
 	}
+	events.PublishAssistanceRequested(r.Context(), c.events, msg)
 	views.JSON(w, http.StatusCreated, msg)
 }
 

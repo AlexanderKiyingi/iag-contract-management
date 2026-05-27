@@ -10,7 +10,9 @@ schema) for contract workspace data.
 |---------|-------------|
 | **iag-authentication** | RS256 JWT verification; permission catalogue registered at boot |
 | **iag-api-gateway** | Public ingress at `/api/v1/contract-management/v1/...` |
+| **iag-notifications** | Consumes `contracts.alert.raised` on `iag.commercial` |
 | **Postgres** | Schema `iag_contracts`, role `svc_iag_contracts` |
+| **Kafka (Redpanda)** | Publishes domain events to `iag.commercial` when `EVENT_BUS_ENABLED=true` |
 
 ## Environment
 
@@ -23,8 +25,36 @@ schema) for contract workspace data.
 | `SERVICE_CLIENT_ID` / `SERVICE_CLIENT_SECRET` | Outbound calls (permissions register) |
 | `ALLOWED_ORIGINS` | CORS (required in production) |
 | `TRUSTED_PROXIES` | Gateway/load-balancer CIDRs for correct client IP |
+| `EVENT_BUS_ENABLED` | `true` to publish to Kafka |
+| `KAFKA_BROKERS` | Comma-separated broker list |
+| `NOTIFY_DEFAULT_RECIPIENT` | Email for assistance/milestone alerts |
+| `MILESTONE_REMINDER_DAYS` | Jobs CLI: due-soon window (default `7`) |
 
 See `config/.env.production.example` for a full production template.
+
+## Events (Kafka)
+
+Topic: **`iag.commercial`** (source `iag.contract-management`)
+
+| Type | When |
+|------|------|
+| `contracts.contract.created` | Contract created |
+| `contracts.contract.updated` | Contract patched |
+| `contracts.contract.status_changed` | Status field changed |
+| `contracts.contract.deleted` | Contract deleted |
+| `contracts.assistance.requested` | Assistance message posted |
+| `contracts.milestone.due_soon` | Jobs CLI finds milestone within reminder window |
+| `contracts.alert.raised` | Notification dispatch envelope (→ iag-notifications) |
+
+## Jobs
+
+Run milestone reminders (cron / Railway scheduled job):
+
+```bash
+/app/jobs --milestone-reminders
+```
+
+Compose one-shot worker: `contract-management-jobs` (same image, different command).
 
 ## API
 

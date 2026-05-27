@@ -3,16 +3,18 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
 )
 
 type ContractController struct {
-	model *models.Store
+	model  *models.Store
+	events *events.Bus
 }
 
-func NewContractController(model *models.Store) *ContractController {
-	return &ContractController{model: model}
+func NewContractController(model *models.Store, bus *events.Bus) *ContractController {
+	return &ContractController{model: model, events: bus}
 }
 
 func (c *ContractController) List(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +56,7 @@ func (c *ContractController) Create(w http.ResponseWriter, r *http.Request) {
 		views.WriteError(w, err)
 		return
 	}
+	events.PublishContractCreated(r.Context(), c.events, contract)
 	views.Contract(w, http.StatusCreated, contract)
 }
 
@@ -68,10 +71,20 @@ func (c *ContractController) Patch(w http.ResponseWriter, r *http.Request) {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	var previous models.ContractStatus
+	if patch.Status != nil {
+		if existing, err := c.model.FindContract(no); err == nil {
+			previous = existing.Status
+		}
+	}
 	contract, err := c.model.PatchContract(no, patch)
 	if err != nil {
 		views.WriteError(w, err)
 		return
+	}
+	events.PublishContractUpdated(r.Context(), c.events, contract)
+	if patch.Status != nil && *patch.Status != previous {
+		events.PublishContractStatusChanged(r.Context(), c.events, contract, previous)
 	}
 	views.Contract(w, http.StatusOK, contract)
 }
@@ -80,9 +93,14 @@ func (c *ContractController) Delete(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), c.model, w, "contracts.delete") {
 		return
 	}
-	if err := c.model.DeleteContract(lastPathSegment(r)); err != nil {
+	no := lastPathSegment(r)
+	existing, _ := c.model.FindContract(no)
+	if err := c.model.DeleteContract(no); err != nil {
 		views.WriteError(w, err)
 		return
+	}
+	if existing.No != "" {
+		events.PublishContractDeleted(r.Context(), c.events, existing)
 	}
 	views.NoContent(w)
 }

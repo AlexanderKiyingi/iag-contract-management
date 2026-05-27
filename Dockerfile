@@ -29,7 +29,9 @@ COPY go.mod go.sum ./
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
     && go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .
+RUN set -eu; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 
 # ─── Monorepo (context = repo root) ────────────────────────────────────────
 FROM base AS build-monorepo
@@ -39,12 +41,15 @@ COPY services/commercial/contract-management/go.mod services/commercial/contract
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
     && go mod download
 COPY services/commercial/contract-management/ .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .
+RUN set -eu; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 
 FROM alpine:3.20 AS monorepo
 RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
 COPY --from=build-monorepo /out/contract-management .
+COPY --from=build-monorepo /out/jobs /app/jobs
 EXPOSE 4103
 ENV GIN_MODE=release \
     ENVIRONMENT=production \
@@ -58,6 +63,7 @@ FROM alpine:3.20 AS standalone
 RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
 COPY --from=build-standalone /out/contract-management .
+COPY --from=build-standalone /out/jobs /app/jobs
 EXPOSE 4103
 ENV GIN_MODE=release \
     ENVIRONMENT=production \

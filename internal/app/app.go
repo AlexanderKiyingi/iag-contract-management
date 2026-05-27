@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/alvor-technologies/iag-contract-management/internal/config"
 	"github.com/alvor-technologies/iag-contract-management/internal/controllers"
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 )
@@ -26,7 +27,7 @@ type MVC struct {
 
 // NewMVC wires the dependency graph from a pre-opened Postgres pool. The
 // caller owns the pool's lifecycle.
-func NewMVC(cfg config.Config, pg *persistence.Postgres) *MVC {
+func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 	store := buildStoreFrom(cfg, pg)
 	health := controllers.NewHealthController(pg)
 	return &MVC{
@@ -38,8 +39,8 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres) *MVC {
 		Workspace:   controllers.NewWorkspaceController(store),
 		WsRes:       controllers.NewWorkspaceResourcesController(store),
 		Frontend:    controllers.NewFrontendController(store),
-		FeRes:       controllers.NewFrontendResourcesController(store),
-		Contracts:   controllers.NewContractController(store),
+		FeRes:       controllers.NewFrontendResourcesController(store, bus),
+		Contracts:   controllers.NewContractController(store, bus),
 		Permissions: controllers.NewPermissionsController(store),
 		Uploads:     controllers.NewUploadsController(store),
 		Exports:     controllers.NewExportsController(store),

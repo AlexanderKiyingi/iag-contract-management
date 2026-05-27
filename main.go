@@ -15,6 +15,7 @@ import (
 	platformserviceauth "github.com/alvor-technologies/iag-platform-go/serviceauth"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/config"
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/platformauth"
@@ -87,7 +88,13 @@ func main() {
 		slog.Warn("SERVICE_CLIENT_SECRET unset — skipping permissions registration")
 	}
 
-	engine := router.New(cfg, pg, verifier, pg)
+	eventBus := events.NewFromEnv()
+	defer func() { _ = eventBus.Close() }()
+	if eventBus.Enabled() {
+		slog.Info("event bus enabled", "topic", events.TopicCommercial)
+	}
+
+	engine := router.New(cfg, pg, verifier, pg, eventBus)
 
 	addr := ":" + cfg.Port
 	srv := &http.Server{

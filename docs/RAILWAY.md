@@ -76,3 +76,14 @@ Public readiness via gateway: `GET /api/v1/contract-management/ready`.
 | Boot loop / JWKS error | Fix `JWKS_URL`; production requires successful initial JWKS fetch |
 | 503 on `/ready` | Postgres unreachable or schema bootstrap not applied |
 | Health check 404 | Ensure `PORT=4103` and probe path is `/ready` |
+| Events not published | Set `EVENT_BUS_ENABLED=true` and `KAFKA_BROKERS` |
+
+## Scheduled jobs (Railway cron)
+
+Add a second Railway service (same repo/image) or a cron schedule:
+
+```text
+Command: /app/jobs --milestone-reminders
+```
+
+Required env: `DATABASE_URL`, `EVENT_BUS_ENABLED=true`, `KAFKA_BROKERS`, optional `MILESTONE_REMINDER_DAYS=7`, `NOTIFY_DEFAULT_RECIPIENT`.

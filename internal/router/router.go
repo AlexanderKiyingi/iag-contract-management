@@ -8,6 +8,7 @@ import (
 
 	"github.com/alvor-technologies/iag-contract-management/internal/app"
 	"github.com/alvor-technologies/iag-contract-management/internal/config"
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/middleware"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/platformauth"
@@ -21,12 +22,13 @@ func New(
 	pg *persistence.Postgres,
 	verifier *platformauth.Verifier,
 	contractors middleware.ContractorLookup,
+	bus *events.Bus,
 ) *gin.Engine {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	mvc := app.NewMVC(cfg, pg)
+	mvc := app.NewMVC(cfg, pg, bus)
 
 	r := gin.New()
 	// Trust only the upstream proxies operators explicitly listed. Without
