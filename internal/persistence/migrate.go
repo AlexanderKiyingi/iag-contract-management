@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,9 +18,13 @@ var migrationFS embed.FS
 // applied versions in schema_migrations. Each file's basename (minus the
 // .up.sql suffix) is the version key.
 //
-// The whole file is executed as a single Exec inside a transaction, so
-// embedded DO blocks, function bodies, and string literals containing
-// semicolons are handled correctly (the previous splitter broke them).
+// Each file is sent as a single Exec under the simple query protocol so
+// PostgreSQL handles multi-statement bodies (semicolons inside DO blocks,
+// function bodies, and string literals all work). pgx's default extended
+// protocol rejects multi-statement bodies — the first symptom is a confusing
+// "column X does not exist" because PostgreSQL parses only the first
+// statement of the file and then runs subsequent index DDL against an
+// empty table.
 func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	if _, err := pool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -67,7 +72,11 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, string(body)); err != nil {
+		// QueryExecModeSimpleProtocol forces the underlying query into the
+		// PostgreSQL simple query protocol, which permits multi-statement
+		// SQL bodies. Without this pgx defaults to extended protocol
+		// (Parse/Bind/Execute) which is one statement per call.
+		if _, err := tx.Exec(ctx, string(body), pgx.QueryExecModeSimpleProtocol); err != nil {
 			_ = tx.Rollback(ctx)
 			return fmt.Errorf("%s exec: %w", version, err)
 		}
