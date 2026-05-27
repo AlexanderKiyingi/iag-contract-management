@@ -1,65 +1,23 @@
-# syntax=docker/dockerfile:1.7
-#
-# Targets:
-#   standalone (default) — iag-contract-management repo root on Railway
-#   monorepo             — IAG_multi_backend root context (deploy/docker-compose)
-#
-# Monorepo:  docker build -f services/commercial/contract-management/Dockerfile --target monorepo .
-# Standalone: docker build -f Dockerfile --target standalone .
+# Standalone image for Railway and iag-contract-management repo root builds.
+# Monorepo compose/CI: use Dockerfile.monorepo (--target monorepo).
 
-FROM golang:1.23-alpine AS base
+FROM golang:1.23-alpine AS build
 RUN apk add --no-cache ca-certificates
-ENV PLATFORM_GO_DEP=/deps/platform-go
-
-FROM base AS platform-go-vendor
-COPY third_party/platform-go ${PLATFORM_GO_DEP}
-
-FROM base AS platform-go-copy
-COPY shared/platform-go ${PLATFORM_GO_DEP}
-
-# ─── Standalone iag-contract-management (repo root = service root) ─────────
-FROM base AS build-standalone
-COPY --from=platform-go-vendor ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
 WORKDIR /src
+COPY third_party/platform-go /deps/platform-go
 COPY go.mod go.sum ./
-RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
+RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go \
     && go mod download
 COPY . .
 RUN set -eu; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 
-# ─── Monorepo (context = repo root) ────────────────────────────────────────
-FROM base AS build-monorepo
-COPY --from=platform-go-copy ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
-WORKDIR /src/services/commercial/contract-management
-COPY services/commercial/contract-management/go.mod services/commercial/contract-management/go.sum ./
-RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
-    && go mod download
-COPY services/commercial/contract-management/ .
-RUN set -eu; \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
-
-FROM alpine:3.20 AS monorepo
+FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
-COPY --from=build-monorepo /out/contract-management .
-COPY --from=build-monorepo /out/jobs /app/jobs
-EXPOSE 4103
-ENV GIN_MODE=release \
-    ENVIRONMENT=production \
-    PORT=4103
-HEALTHCHECK --interval=15s --timeout=5s --start-period=25s --retries=5 \
-  CMD wget -q -O /dev/null http://127.0.0.1:4103/ready || exit 1
-USER nobody
-ENTRYPOINT ["/app/contract-management"]
-
-FROM alpine:3.20 AS standalone
-RUN apk add --no-cache ca-certificates tzdata wget
-WORKDIR /app
-COPY --from=build-standalone /out/contract-management .
-COPY --from=build-standalone /out/jobs /app/jobs
+COPY --from=build /out/contract-management .
+COPY --from=build /out/jobs /app/jobs
 EXPOSE 4103
 ENV GIN_MODE=release \
     ENVIRONMENT=production \

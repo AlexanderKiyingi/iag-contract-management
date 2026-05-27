@@ -1,0 +1,37 @@
+# syntax=docker/dockerfile:1.7
+#
+# Monorepo builds from IAG_multi_backend root (deploy/docker-compose, meta CI).
+#
+#   docker build -f services/commercial/contract-management/Dockerfile.monorepo --target monorepo .
+
+FROM golang:1.23-alpine AS base
+RUN apk add --no-cache ca-certificates
+ENV PLATFORM_GO_DEP=/deps/platform-go
+
+FROM base AS platform-go-copy
+COPY shared/platform-go ${PLATFORM_GO_DEP}
+
+FROM base AS build-monorepo
+COPY --from=platform-go-copy ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
+WORKDIR /src/services/commercial/contract-management
+COPY services/commercial/contract-management/go.mod services/commercial/contract-management/go.sum ./
+RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
+    && go mod download
+COPY services/commercial/contract-management/ .
+RUN set -eu; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
+
+FROM alpine:3.20 AS monorepo
+RUN apk add --no-cache ca-certificates tzdata wget
+WORKDIR /app
+COPY --from=build-monorepo /out/contract-management .
+COPY --from=build-monorepo /out/jobs /app/jobs
+EXPOSE 4103
+ENV GIN_MODE=release \
+    ENVIRONMENT=production \
+    PORT=4103
+HEALTHCHECK --interval=15s --timeout=5s --start-period=25s --retries=5 \
+  CMD wget -q -O /dev/null http://127.0.0.1:4103/ready || exit 1
+USER nobody
+ENTRYPOINT ["/app/contract-management"]

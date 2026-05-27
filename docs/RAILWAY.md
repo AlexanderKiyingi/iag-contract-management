@@ -4,18 +4,29 @@
 
 | Setting | Value |
 |---------|--------|
-| Repository | `AlexanderKiyingi/iag-contract-management` |
+| Repository | **`AlexanderKiyingi/iag-contract-management`** (recommended) |
 | Branch | `main` |
 | Root directory | **`/`** (repo root — `Dockerfile`, `railway.toml`, and `railway.json` must be here) |
+| Config-as-code path | **`/railway.json`** (or leave default when root is `/`) |
 
-The **standalone** Dockerfile target (default) uses the committed
-`third_party/platform-go` vendored copy. No private git clone or GitHub token is
-required at build time.
+Connect Railway to the **standalone repo**, not `IAG_multi_backend`. The root
+`Dockerfile` is a single-purpose Railway build (no monorepo targets).
 
-If wired to `IAG_multi_backend` instead, set **Root directory** to the
-meta-repo root, **Dockerfile path** to
-`services/commercial/contract-management/Dockerfile`, and build target
-**`monorepo`**.
+The **standalone** Dockerfile uses the committed `third_party/platform-go`
+vendored copy. No private git clone or GitHub token is required at build time.
+
+### If deploying from the meta-repo instead
+
+| Setting | Value |
+|---------|--------|
+| Repository | `AlexanderKiyingi/IAG_multi_backend` |
+| Root directory | `services/commercial/contract-management` |
+| Config-as-code path | **`/services/commercial/contract-management/railway.json`** |
+| Dockerfile path | `Dockerfile` (relative to root directory) |
+
+Config-as-code at the **meta-repo root** applies to every service unless you
+set an explicit config file path per service. Without that path, Railway may
+ignore this service's `railway.json` and default to **Railpack**.
 
 ## Builder (Dockerfile, not Railpack)
 
@@ -29,16 +40,34 @@ Config-as-code (both files are intentional — Railway reads either):
 
 ### If deployment metadata shows RAILPACK
 
-1. Confirm **Root directory** is `/` for the standalone repo (not a monorepo subpath).
+1. Confirm the service is connected to **`iag-contract-management`**, root **`/`**.
 2. Confirm `Dockerfile`, `railway.toml`, and `railway.json` exist at that root.
-3. In the service **Settings → Build**, set **Builder** to **Dockerfile** and
-   **Dockerfile path** to `Dockerfile`.
-4. Optional env fallback: `RAILWAY_DOCKERFILE_PATH=Dockerfile`
-5. Trigger a **manual redeploy** from the dashboard after changing builder settings
+3. In **Settings → Build**, set **Builder** to **Dockerfile** and **Dockerfile path** to `Dockerfile`. Clear any custom **Build command**.
+4. Set **Config-as-code file** to `/railway.json` if the field is available.
+5. Optional env fallback: `RAILWAY_DOCKERFILE_PATH=Dockerfile`
+6. Trigger a **manual redeploy** from the dashboard after changing builder settings
    (git-push deploys have intermittently ignored config-as-code on Railway).
 
-Successful build logs should show Docker stages (`build-standalone`, `standalone`),
-not `Railpack 0.x.x`.
+Successful build logs should show:
+
+```text
+Using detected Dockerfile!
+==========================
+```
+
+followed by Docker `FROM golang:1.23-alpine` steps — not `Railpack 0.x.x`.
+
+### If build logs stop at "scheduling build on Metal builder"
+
+This is a known Railway Metal builder scheduling issue (often no further output).
+
+1. **Redeploy** from the dashboard (sometimes assigns a different builder).
+2. If available, temporarily disable **Use Metal Build Environment** under
+   **Settings → Build** and redeploy.
+3. Try a different **region** (Settings → Deploy → Regions) if builds stay stuck.
+4. Confirm CI passes: `.github/workflows/ci.yml` runs `docker build -f Dockerfile .`
+   on every push — if CI passes but Railway fails with empty logs, the issue is
+   platform-side, not the Dockerfile.
 
 ## Postgres
 
@@ -93,7 +122,8 @@ Public readiness via gateway: `GET /api/v1/contract-management/ready`.
 
 | Symptom | Fix |
 |---------|-----|
-| Instant fail, metadata shows **RAILPACK**, no Docker logs | Set builder to Dockerfile (see above); verify root directory `/` |
+| Instant fail, metadata shows **RAILPACK**, no Docker logs | Connect standalone repo; set builder Dockerfile; clear build command; set config path |
+| Build log only shows **scheduling build on Metal builder** | Redeploy; disable Metal builder if available; try another region |
 | `Railpack could not determine how to build` | Same — Railpack must not run for this Go service |
 | Connection refused on `127.0.0.1:5432` | Replace `DATABASE_URL` with Railway Postgres reference |
 | Boot loop / JWKS error | Fix `JWKS_URL`; production requires successful initial JWKS fetch |
