@@ -18,7 +18,13 @@ COPY services/commercial/contract-management/go.mod services/commercial/contract
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
     && go mod download
 COPY services/commercial/contract-management/ .
+# The COPY above restored go.mod from the source tree, which still has the
+# meta-repo-only relative `replace => ../../../shared/platform-go`. From this
+# WORKDIR that resolves to /src/shared/platform-go (not present in the
+# container — the vendored module is at ${PLATFORM_GO_DEP}). Re-apply the
+# replace so `go build` finds the dependency.
 RUN set -eu; \
+    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP}; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 

@@ -9,7 +9,12 @@ COPY go.mod go.sum ./
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go \
     && go mod download
 COPY . .
+# `COPY . .` above restored go.mod from the build context, which still carries
+# the meta-repo-only `replace => ../../../shared/platform-go`. That path does
+# not exist inside the build container, so re-apply the vendored replace
+# before invoking `go build`.
 RUN set -eu; \
+    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 
