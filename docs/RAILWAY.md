@@ -6,18 +6,39 @@
 |---------|--------|
 | Repository | `AlexanderKiyingi/iag-contract-management` |
 | Branch | `main` |
-| Root directory | `/` (repo root — `Dockerfile` and `railway.toml` are here) |
+| Root directory | **`/`** (repo root — `Dockerfile`, `railway.toml`, and `railway.json` must be here) |
 
-The **standalone** Dockerfile target (default) shallow-clones
-`IAG_multi_backend` at build time to obtain `shared/platform-go` — no monorepo
-checkout is required on Railway.
-
-Optional build arg: `IAG_META_REF` (branch/tag, default `main`).
+The **standalone** Dockerfile target (default) uses the committed
+`third_party/platform-go` vendored copy. No private git clone or GitHub token is
+required at build time.
 
 If wired to `IAG_multi_backend` instead, set **Root directory** to the
 meta-repo root, **Dockerfile path** to
 `services/commercial/contract-management/Dockerfile`, and build target
 **`monorepo`**.
+
+## Builder (Dockerfile, not Railpack)
+
+Railway defaults new services to **Railpack**. This service must use the
+**Dockerfile** builder.
+
+Config-as-code (both files are intentional — Railway reads either):
+
+- `railway.toml` — `[build] builder = "DOCKERFILE"`
+- `railway.json` — `"builder": "DOCKERFILE"`, `"dockerfilePath": "Dockerfile"`
+
+### If deployment metadata shows RAILPACK
+
+1. Confirm **Root directory** is `/` for the standalone repo (not a monorepo subpath).
+2. Confirm `Dockerfile`, `railway.toml`, and `railway.json` exist at that root.
+3. In the service **Settings → Build**, set **Builder** to **Dockerfile** and
+   **Dockerfile path** to `Dockerfile`.
+4. Optional env fallback: `RAILWAY_DOCKERFILE_PATH=Dockerfile`
+5. Trigger a **manual redeploy** from the dashboard after changing builder settings
+   (git-push deploys have intermittently ignored config-as-code on Railway).
+
+Successful build logs should show Docker stages (`build-standalone`, `standalone`),
+not `Railpack 0.x.x`.
 
 ## Postgres
 
@@ -72,11 +93,14 @@ Public readiness via gateway: `GET /api/v1/contract-management/ready`.
 
 | Symptom | Fix |
 |---------|-----|
+| Instant fail, metadata shows **RAILPACK**, no Docker logs | Set builder to Dockerfile (see above); verify root directory `/` |
+| `Railpack could not determine how to build` | Same — Railpack must not run for this Go service |
 | Connection refused on `127.0.0.1:5432` | Replace `DATABASE_URL` with Railway Postgres reference |
 | Boot loop / JWKS error | Fix `JWKS_URL`; production requires successful initial JWKS fetch |
 | 503 on `/ready` | Postgres unreachable or schema bootstrap not applied |
 | Health check 404 | Ensure `PORT=4103` and probe path is `/ready` |
 | Events not published | Set `EVENT_BUS_ENABLED=true` and `KAFKA_BROKERS` |
+| `third_party/platform-go` missing in build | Run `sh scripts/sync-platform-go.sh` and commit before deploy |
 
 ## Scheduled jobs (Railway cron)
 
@@ -87,3 +111,13 @@ Command: /app/jobs --milestone-reminders
 ```
 
 Required env: `DATABASE_URL`, `EVENT_BUS_ENABLED=true`, `KAFKA_BROKERS`, optional `MILESTONE_REMINDER_DAYS=7`, `NOTIFY_DEFAULT_RECIPIENT`.
+
+## Updating platform-go
+
+When `shared/platform-go` changes in the meta-repo:
+
+```bash
+sh scripts/sync-platform-go.sh
+git add third_party/platform-go
+git commit -m "chore: sync vendored platform-go"
+```

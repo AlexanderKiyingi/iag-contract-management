@@ -1,4 +1,5 @@
 # Railway config-as-code for iag-contract-management (repo root = service root).
+# railway.json mirrors this config (Railway reads either). Root directory must be `/`.
 
 [build]
 builder = "DOCKERFILE"

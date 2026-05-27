@@ -8,22 +8,18 @@
 # Standalone: docker build -f Dockerfile --target standalone .
 
 FROM golang:1.23-alpine AS base
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache ca-certificates
 ENV PLATFORM_GO_DEP=/deps/platform-go
 
-FROM base AS platform-go-clone
-ARG IAG_META_REF=main
-ARG IAG_META_REPO=https://github.com/AlexanderKiyingi/IAG_multi_backend.git
-RUN git clone --depth 1 --branch "${IAG_META_REF}" "${IAG_META_REPO}" /tmp/iag \
-    && mv /tmp/iag/shared/platform-go "${PLATFORM_GO_DEP}" \
-    && rm -rf /tmp/iag
+FROM base AS platform-go-vendor
+COPY third_party/platform-go ${PLATFORM_GO_DEP}
 
 FROM base AS platform-go-copy
 COPY shared/platform-go ${PLATFORM_GO_DEP}
 
 # ─── Standalone iag-contract-management (repo root = service root) ─────────
 FROM base AS build-standalone
-COPY --from=platform-go-clone ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
+COPY --from=platform-go-vendor ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \

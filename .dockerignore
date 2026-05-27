@@ -1,0 +1,9 @@
+.git
+.gitignore
+*.md
+docs/
+scripts/smoke_test.sh
+docker-compose.yml
+.env
+.env.*
+!config/.env.production.example
