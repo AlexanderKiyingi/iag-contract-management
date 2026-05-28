@@ -16,6 +16,9 @@ jobs:
         with:
           go-version: "1.23"
 
+      - name: Point platform-go replace at vendored copy
+        run: go mod edit -replace=github.com/alvor-technologies/iag-platform-go=./third_party/platform-go
+
       - name: Test
         run: go test ./...
 
