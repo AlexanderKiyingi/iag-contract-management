@@ -130,6 +130,13 @@ CREATE TABLE IF NOT EXISTS task_items (
     column_key TEXT NOT NULL,
     assignee TEXT NOT NULL DEFAULT ''
 );
+-- Legacy deployments may carry a pre-cutover task_items table without these
+-- columns. Add them idempotently so the indexes below succeed on both fresh
+-- and legacy schemas. NOT NULL/FK are intentionally omitted on the legacy
+-- path: there may be pre-existing rows we can't safely backfill, and the
+-- index works fine over NULLs.
+ALTER TABLE task_items ADD COLUMN IF NOT EXISTS project_id INT;
+ALTER TABLE task_items ADD COLUMN IF NOT EXISTS column_key TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_task_items_project ON task_items (project_id);
 CREATE INDEX IF NOT EXISTS idx_task_items_column ON task_items (column_key);
 
