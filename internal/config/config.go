@@ -44,6 +44,13 @@ type Config struct {
 	// RequestTimeout is the per-request deadline applied by the timeout
 	// middleware. Zero disables it.
 	RequestTimeout time.Duration
+
+	// SeedOnStartup writes the demo workspace into the DB on first run (when
+	// the DB is empty). Defaults to true in non-production envs and false in
+	// production, where leaving it on can collide with legacy table shapes
+	// (e.g. audit_entries.id BIGINT vs the current schema's TEXT). Set
+	// SEED_ON_STARTUP=true|false to override.
+	SeedOnStartup bool
 }
 
 // Load reads configuration from env.
@@ -66,6 +73,11 @@ func Load() Config {
 		if t := strings.TrimSpace(p); t != "" {
 			proxies = append(proxies, t)
 		}
+	}
+
+	seedOnStartup := env != "production"
+	if raw := strings.TrimSpace(os.Getenv("SEED_ON_STARTUP")); raw != "" {
+		seedOnStartup = strings.EqualFold(raw, "true")
 	}
 
 	return Config{
@@ -91,6 +103,7 @@ func Load() Config {
 		MaxBodyBytes:    int64(envInt("MAX_BODY_BYTES", 8*1024*1024)),
 		TrustedProxies:  proxies,
 		RequestTimeout:  time.Duration(envInt("REQUEST_TIMEOUT_SECONDS", 30)) * time.Second,
+		SeedOnStartup:   seedOnStartup,
 	}
 }
 

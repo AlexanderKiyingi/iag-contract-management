@@ -8,6 +8,9 @@ import (
 
 // buildStoreFrom hydrates the model store from an already-connected Postgres
 // pool. The caller owns the pool's lifecycle (Close at shutdown).
-func buildStoreFrom(_ config.Config, pg *persistence.Postgres) *models.Store {
-	return models.NewStore(&models.StoreOptions{Repo: pg})
+func buildStoreFrom(cfg config.Config, pg *persistence.Postgres) *models.Store {
+	return models.NewStore(&models.StoreOptions{
+		Repo:          pg,
+		SeedOnStartup: cfg.SeedOnStartup,
+	})
 }
