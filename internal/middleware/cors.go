@@ -41,12 +41,16 @@ func GinCORS(cfg config.Config) gin.HandlerFunc {
 
 func GinSecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// JSON-only API: strictest CSP — nothing loads, nothing frames.
+		c.Header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		if cfg := c.GetHeader("X-Forwarded-Proto"); strings.EqualFold(cfg, "https") || c.Request.TLS != nil {
-			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		}
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=(), interest-cohort=()")
+		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Next()
 	}
 }
