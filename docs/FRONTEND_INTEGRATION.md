@@ -67,18 +67,30 @@ hot path.
 |---|---|
 | Local direct | `http://localhost:4103/v1` |
 | Local via gateway | `http://localhost:8080/api/v1/contract-management/v1` |
-| Production | `https://<gateway>/api/v1/contract-management/v1` |
+| Production | `https://iag-api-gateway-production.up.railway.app/api/v1/contract-management/v1` |
 
 **Always go through the gateway in non-local environments.** It owns rate
 limiting, CORS, request IDs, and routes `/api/v1/contract-management/*` to
-this service.
+this service. In production the only public host is the gateway
+(`https://iag-api-gateway-production.up.railway.app`); contract-management
+itself runs on Railway's private network
+(`iag-contract-management.railway.internal:4103`) and is not exposed via its
+own `*.up.railway.app` URL.
 
 ### Required frontend env vars
 
 ```env
+# Local (via gateway)
 NEXT_PUBLIC_CONTRACTS_API_URL=http://localhost:8080/api/v1/contract-management/v1
 NEXT_PUBLIC_AUTH_API_URL=http://localhost:8080/api/v1/authentication
 NEXT_PUBLIC_GATEWAY_ORIGIN=http://localhost:8080
+```
+
+```env
+# Production (Railway, via gateway)
+NEXT_PUBLIC_CONTRACTS_API_URL=https://iag-api-gateway-production.up.railway.app/api/v1/contract-management/v1
+NEXT_PUBLIC_AUTH_API_URL=https://iag-api-gateway-production.up.railway.app/api/v1/authentication
+NEXT_PUBLIC_GATEWAY_ORIGIN=https://iag-api-gateway-production.up.railway.app
 ```
 
 ### CORS
@@ -124,7 +136,7 @@ Actions: `create`, `read`, `update`, `delete`. So `contracts.read`,
 | Role | Effective permissions |
 |---|---|
 | `super_admin` / `admin` | All 44 keys (bypass) |
-| `manager` | Operational CRUD on contracts/zones/payments/tasks/milestones/materials + read-only on users/roles/audit + reports.read/create + insights.read/update |
+| `manager` | `contracts.{create,read,update}` (no delete) · `zones.{read,update}` · `payments.read` · full CRUD on `tasks`/`milestones`/`materials` · read-only on `users`/`roles`/`audit` · `reports.{read,create}` · `insights.{read,update}` |
 | `viewer` | All `*.read` (read-only every module) |
 | `contractor` | `contracts.read`, **scoped** to contracts where `sup` matches their supervisor mapping |
 
