@@ -23,6 +23,7 @@ type MVC struct {
 	Permissions *controllers.PermissionsController
 	Uploads     *controllers.UploadsController
 	Exports     *controllers.ExportsController
+	Admin       *controllers.AdminController
 }
 
 // NewMVC wires the dependency graph from a pre-opened Postgres pool. The
@@ -44,5 +45,6 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 		Permissions: controllers.NewPermissionsController(store),
 		Uploads:     controllers.NewUploadsController(store),
 		Exports:     controllers.NewExportsController(store),
+		Admin:       controllers.NewAdminController(store, pg),
 	}
 }

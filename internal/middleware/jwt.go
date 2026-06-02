@@ -2,13 +2,13 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/platformauth"
+	"github.com/alvor-technologies/iag-platform-go/apierr"
 )
 
 // ContractorLookup resolves a caller's contractor-supervisor binding (if any).
@@ -32,13 +32,13 @@ func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup) gin.Hand
 
 		header := c.GetHeader("Authorization")
 		if header == "" || !strings.HasPrefix(header, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+			apierr.Unauthorized(c, "missing bearer token")
 			return
 		}
 		token := strings.TrimPrefix(header, "Bearer ")
 		claims, err := v.Verify(token)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			apierr.Unauthorized(c, "invalid or expired token")
 			return
 		}
 

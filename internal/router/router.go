@@ -53,6 +53,7 @@ func New(
 	// fill the limiter's per-IP map and amplify the small leak there.
 	r.Use(middleware.GinPlatformAuth(verifier, contractors))
 	r.Use(middleware.GinRateLimit(cfg.RateLimitPerMin))
+	r.Use(middleware.RequestAudit(pg))
 	// Request log runs last so handler-applied status codes are visible.
 	r.Use(middleware.GinLogger())
 
@@ -154,6 +155,9 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	g.GET("/audit", wrap(mvc.FeRes.ListAudit))
 	g.POST("/audit", wrap(mvc.FeRes.AppendAudit))
 	g.GET("/audit/:id", wrap(mvc.FeRes.GetAudit))
+
+	// HTTP request audit (platform admin)
+	g.GET("/admin/audit-logs", wrap(mvc.Admin.ListAPIAuditLogs))
 
 	// Help
 	g.GET("/assistance", wrap(mvc.FeRes.ListAssistance))

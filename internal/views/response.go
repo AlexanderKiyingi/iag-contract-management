@@ -5,28 +5,29 @@ import (
 	"strings"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+	"github.com/alvor-technologies/iag-platform-go/apierr"
 )
 
 // WriteError maps model errors to HTTP responses (view layer).
 func WriteError(w http.ResponseWriter, err error) {
 	switch err {
 	case models.ErrNotFound:
-		Error(w, http.StatusNotFound, "not found")
+		apierr.WriteHTTP(w, http.StatusNotFound, apierr.CodeNotFound, "resource not found")
 	case models.ErrConflict:
-		Error(w, http.StatusConflict, "conflict")
+		apierr.WriteHTTP(w, http.StatusConflict, apierr.CodeConflict, "resource conflict")
 	case models.ErrValidation:
-		Error(w, http.StatusBadRequest, err.Error())
+		apierr.WriteHTTP(w, http.StatusBadRequest, apierr.CodeValidation, err.Error())
 	case models.ErrForbidden:
-		Error(w, http.StatusForbidden, "forbidden")
+		apierr.WriteHTTP(w, http.StatusForbidden, apierr.CodeForbidden, "access denied")
 	case models.ErrUnauthorized:
-		Error(w, http.StatusUnauthorized, "unauthorized")
+		apierr.WriteHTTP(w, http.StatusUnauthorized, apierr.CodeUnauthorized, "authentication required")
 	case models.ErrPersistFailed:
-		Error(w, http.StatusInternalServerError, "failed to save data")
+		apierr.WriteHTTP(w, http.StatusInternalServerError, apierr.CodeInternal, "failed to save data")
 	default:
 		if err != nil && strings.Contains(err.Error(), "validation error") {
-			Error(w, http.StatusBadRequest, err.Error())
+			apierr.WriteHTTP(w, http.StatusBadRequest, apierr.CodeValidation, err.Error())
 			return
 		}
-		Error(w, http.StatusInternalServerError, "internal server error")
+		apierr.WriteHTTP(w, http.StatusInternalServerError, apierr.CodeInternal, "internal server error")
 	}
 }

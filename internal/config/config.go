@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alvor-technologies/iag-platform-go/corsenv"
 )
 
 // Config holds runtime knobs for the contract-management service.
@@ -60,7 +62,7 @@ func Load() Config {
 	issuer := envStr("JWT_ISSUER", "http://localhost:3001")
 	jwksURL := envStr("JWKS_URL", strings.TrimRight(issuer, "/")+"/.well-known/jwks.json")
 
-	origins := envStr("ALLOWED_ORIGINS", envStr("CORS_ORIGIN", ""))
+	origins := corsenv.Allowlist(corsenv.DefaultDevOrigins)
 	var allowed []string
 	for _, o := range strings.Split(origins, ",") {
 		if t := strings.TrimSpace(o); t != "" {

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/alvor-technologies/iag-platform-go/apierr"
 )
 
 // rateLimiter is a best-effort, per-pod, per-client-IP fixed-window limiter.
@@ -94,7 +96,9 @@ func GinRateLimit(perMinute int) gin.HandlerFunc {
 	rl.startEvictor(time.Minute, 5*time.Minute, nil)
 	return func(c *gin.Context) {
 		if !rl.allow(c.ClientIP()) {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": gin.H{"code": apierr.CodeTooManyRequests, "message": "rate limit exceeded"},
+			})
 			return
 		}
 		c.Next()
