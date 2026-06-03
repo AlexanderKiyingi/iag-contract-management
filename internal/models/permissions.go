@@ -171,9 +171,60 @@ func NormalizePermissions(perms []string) []string {
 	return result
 }
 
-// EffectivePermissionsForUser returns a descriptive set of permissions for
-// the named workspace user. Post-cutover this is advisory only — the
-// authoritative permission set lives in the auth service.
+// EnrichSessionFromWorkspace applies workspace custom-role assignments to the
+// JWT session. When a custom role is set, effective permissions are the
+// intersection of JWT grants and custom-role keys (custom role cannot exceed
+// platform grants). Role-based bypasses (super_admin/admin) still apply in
+// sessionHasPermission.
+func (s *Store) EnrichSessionFromWorkspace(sess Session) Session {
+	if sess.Email == "" {
+		return sess
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	u := s.getUserByEmail(sess.Email)
+	if u == nil {
+		return sess
+	}
+	out := sess
+	if u.CustomRoleID != nil {
+		if cr := s.getCustomRoleLocked(*u.CustomRoleID); cr != nil && len(cr.Permissions) > 0 {
+			custom := NormalizePermissions(cr.Permissions)
+			if len(custom) > 0 {
+				out.Permissions = intersectPermissionSets(sess.Permissions, custom)
+			}
+		}
+	}
+	return out
+}
+
+func intersectPermissionSets(jwtPerms, customPerms []string) []string {
+	if len(customPerms) == 0 {
+		return append([]string{}, jwtPerms...)
+	}
+	if len(jwtPerms) == 0 {
+		return append([]string{}, customPerms...)
+	}
+	jwtSet := make(map[string]struct{}, len(jwtPerms))
+	for _, p := range jwtPerms {
+		if p == "*" {
+			return append([]string{}, customPerms...)
+		}
+		jwtSet[p] = struct{}{}
+	}
+	out := make([]string, 0, len(customPerms))
+	for _, p := range customPerms {
+		if _, ok := jwtSet[p]; ok {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// EffectivePermissionsForUser returns the nominal permission template for a
+// workspace user (custom role keys or builtin role template). This is
+// advisory for admin UIs — runtime enforcement uses JWT ∩ custom role via
+// EnrichSessionFromWorkspace on the caller's own session.
 func (s *Store) EffectivePermissionsForUser(userID string) ([]string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

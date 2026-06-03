@@ -23,7 +23,7 @@ type ContractorLookup interface {
 //
 // Public endpoints: /ready, /health, /health/live, /health/ready (root and
 // /v1). Everything else requires a valid token. Notably: /bootstrap is NO LONGER public.
-func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup) gin.HandlerFunc {
+func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup, store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if isPublicPath(c.Request.URL.Path) {
 			c.Next()
@@ -43,6 +43,9 @@ func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup) gin.Hand
 		}
 
 		sess := SessionFromClaims(c.Request.Context(), claims, lookup)
+		if store != nil {
+			sess = store.EnrichSessionFromWorkspace(sess)
+		}
 		c.Request = c.Request.WithContext(models.WithRequestSession(c.Request.Context(), sess))
 		c.Next()
 	}

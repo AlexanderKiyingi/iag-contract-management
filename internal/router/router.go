@@ -51,7 +51,7 @@ func New(
 	}
 	// Auth runs BEFORE the rate limiter so an unauthenticated flood cannot
 	// fill the limiter's per-IP map and amplify the small leak there.
-	r.Use(middleware.GinPlatformAuth(verifier, contractors))
+	r.Use(middleware.GinPlatformAuth(verifier, contractors, mvc.Model))
 	r.Use(middleware.GinRateLimit(cfg.RateLimitPerMin))
 	r.Use(middleware.RequestAudit(pg))
 	// Request log runs last so handler-applied status codes are visible.

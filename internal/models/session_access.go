@@ -62,14 +62,9 @@ func (s *Store) CanEditContractCtx(ctx context.Context, contractNo string) bool 
 // PermissionContextFor builds the front-end-friendly view of what the caller can do.
 func (s *Store) PermissionContextFor(ctx context.Context) PermissionContext {
 	sess := s.sessionFromCtx(ctx)
-	return PermissionContext{
-		Role:           sess.Role,
-		Email:          sess.Email,
-		Permissions:    sess.Permissions,
-		CanMutate:      sessionCanMutate(sess),
-		CanManageRoles: sessionCanManageRoles(sess),
-		IsPortal:       sess.Role == "contractor",
-	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.permissionContextForLocked(sess)
 }
 
 func (s *Store) CheckPermissionsCtx(ctx context.Context, keys []string) map[string]bool {

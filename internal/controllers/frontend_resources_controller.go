@@ -362,6 +362,9 @@ func (c *FrontendResourcesController) ListAssistance(w http.ResponseWriter, r *h
 }
 
 func (c *FrontendResourcesController) PostAssistance(w http.ResponseWriter, r *http.Request) {
+	if !requireMutate(r.Context(), c.model, w) {
+		return
+	}
 	var in models.AssistanceInput
 	if err := decodeJSON(r, &in); err != nil {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")

@@ -27,7 +27,7 @@ func (s *Store) BootstrapCtx(ctx context.Context) BootstrapResponse {
 }
 
 func (s *Store) permissionContextForLocked(sess Session) PermissionContext {
-	return PermissionContext{
+	ctxOut := PermissionContext{
 		Role:           sess.Role,
 		Email:          sess.Email,
 		Permissions:    sess.Permissions,
@@ -35,6 +35,13 @@ func (s *Store) permissionContextForLocked(sess Session) PermissionContext {
 		CanManageRoles: sessionCanManageRoles(sess),
 		IsPortal:       sess.Role == "contractor",
 	}
+	if u := s.getUserByEmail(sess.Email); u != nil && u.CustomRoleID != nil {
+		ctxOut.CustomRoleID = u.CustomRoleID
+		if cr := s.getCustomRoleLocked(*u.CustomRoleID); cr != nil {
+			ctxOut.CustomRoleName = cr.Name
+		}
+	}
+	return ctxOut
 }
 
 // ReplaceWorkspace overwrites the entire workspace via the snapshot path —
