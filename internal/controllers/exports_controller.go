@@ -27,7 +27,7 @@ func (c *ExportsController) ExportContractsCSV(w http.ResponseWriter, r *http.Re
 		views.WriteError(w, models.ErrForbidden)
 		return
 	}
-	contracts := c.model.ListContracts()
+	contracts := c.model.ListContractsForSession(r.Context())
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="contracts-export.csv"`)
 

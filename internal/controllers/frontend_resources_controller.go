@@ -356,13 +356,12 @@ func (c *FrontendResourcesController) AppendAudit(w http.ResponseWriter, r *http
 }
 
 func (c *FrontendResourcesController) ListAssistance(w http.ResponseWriter, r *http.Request) {
-	views.JSON(w, http.StatusOK, c.model.ListAssistance())
+	sess := c.model.GetSessionCtx(r.Context())
+	fe := c.model.GetFrontendForSession(sess)
+	views.JSON(w, http.StatusOK, fe.Assistance)
 }
 
 func (c *FrontendResourcesController) PostAssistance(w http.ResponseWriter, r *http.Request) {
-	if !requireMutate(r.Context(), c.model, w) {
-		return
-	}
 	var in models.AssistanceInput
 	if err := decodeJSON(r, &in); err != nil {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")

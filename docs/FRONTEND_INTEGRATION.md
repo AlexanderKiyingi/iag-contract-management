@@ -2,6 +2,8 @@
 
 Comprehensive guide for connecting a frontend (Next.js, SvelteKit, plain SPA)
 to the contract-management backend. Covers auth, the full HTTP route catalog,
+
+**Canonical UI:** `iagprojects/contracts` (Next.js ACP app, sibling to this meta-repo) — set `NEXT_PUBLIC_ACP_API_URL` to the gateway base in §2 and enable platform OAuth per §1.
 the permission model, pagination, file uploads, and the short-key DTO
 conventions shared with the event bus.
 

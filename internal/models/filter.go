@@ -63,9 +63,16 @@ func FilterFrontend(fe FrontendStore, sess Session) FrontendStore {
 		out.Updates = append([]any(nil), fe.Updates...)
 	}
 
-	// Assistance and profile photos are shown to anyone authenticated — they
-	// scope to the caller themselves.
-	out.Assistance = append([]AssistanceMessage(nil), fe.Assistance...)
+	// Assistance: staff see all threads; others see only their own messages.
+	if sessionCanMutate(sess) {
+		out.Assistance = append([]AssistanceMessage(nil), fe.Assistance...)
+	} else if sess.Email != "" {
+		for _, m := range fe.Assistance {
+			if m.From == sess.Email {
+				out.Assistance = append(out.Assistance, m)
+			}
+		}
+	}
 	if sess.Email != "" {
 		if photo, ok := fe.ProfilePhotos[sess.Email]; ok {
 			out.ProfilePhotos[sess.Email] = photo

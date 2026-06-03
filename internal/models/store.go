@@ -73,6 +73,27 @@ func (s *Store) ListContracts() []Contract {
 	return out
 }
 
+// ListContractsForSession returns contracts visible to the caller (contractor scope).
+func (s *Store) ListContractsForSession(ctx context.Context) []Contract {
+	sess := s.sessionFromCtx(ctx)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return filterContractsForSession(s.Workspace.Contracts, sess)
+}
+
+// GetContractForSession returns one contract if the caller may read it.
+func (s *Store) GetContractForSession(ctx context.Context, no string) (Contract, error) {
+	c, err := s.GetContract(no)
+	if err != nil {
+		return Contract{}, err
+	}
+	sess := s.sessionFromCtx(ctx)
+	if len(filterContractsForSession([]Contract{c}, sess)) == 0 {
+		return Contract{}, ErrNotFound
+	}
+	return c, nil
+}
+
 func (s *Store) GetContract(no string) (_ Contract, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

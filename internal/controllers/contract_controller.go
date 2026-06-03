@@ -21,7 +21,7 @@ func (c *ContractController) List(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), c.model, w, "contracts.read") {
 		return
 	}
-	list := c.model.ListContracts()
+	list := c.model.ListContractsForSession(r.Context())
 	page, pageSize, paginate := models.ParsePageQuery(r, 50, 500)
 	if paginate {
 		views.JSON(w, http.StatusOK, models.PaginateSlice(list, page, pageSize))
@@ -34,7 +34,7 @@ func (c *ContractController) Get(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), c.model, w, "contracts.read") {
 		return
 	}
-	contract, err := c.model.FindContract(lastPathSegment(r))
+	contract, err := c.model.GetContractForSession(r.Context(), lastPathSegment(r))
 	if err != nil {
 		views.WriteError(w, err)
 		return
