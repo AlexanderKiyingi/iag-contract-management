@@ -230,6 +230,9 @@ permission listed in the third column; `—` means any authenticated user.
 |---|---|---|
 | GET | `/v1/zones` | `zones.read` |
 | GET | `/v1/zones/:code` | `zones.read` |
+| PATCH | `/v1/zones/:code` | `zones.update` |
+
+`PATCH` body: `{ name?, desc?, sup?, color? }`. Financial aggregates are derived from contracts.
 
 ### 4.5 Engineers
 
@@ -278,7 +281,7 @@ permission listed in the third column; `—` means any authenticated user.
 |---|---|---|---|
 | GET | `/v1/projects` | `tasks.read` | List task projects |
 | POST | `/v1/projects` | `tasks.create` | Create project |
-| PATCH | `/v1/projects/:index` | `tasks.update` | Update by ordinal index |
+| PATCH | `/v1/projects/:index` | `tasks.update` | Update name and/or `sections` by ordinal index |
 | DELETE | `/v1/projects/:index` | `tasks.delete` | Delete by index |
 | POST | `/v1/projects/:index/tasks` | `tasks.create` | Add task to project |
 | PATCH | `/v1/projects/:index/tasks/:taskId` | `tasks.update` | Update task |

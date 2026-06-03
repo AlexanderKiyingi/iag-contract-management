@@ -25,6 +25,38 @@ func (s *Store) GetZone(code string) (_ Zone, err error) {
 	return Zone{}, ErrNotFound
 }
 
+func (s *Store) PatchZone(code string, patch ZonePatch) (Zone, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.Workspace.Zones {
+		if s.Workspace.Zones[i].Code != code {
+			continue
+		}
+		z := &s.Workspace.Zones[i]
+		if patch.Name != nil {
+			z.Name = strings.TrimSpace(*patch.Name)
+		}
+		if patch.Desc != nil {
+			z.Desc = strings.TrimSpace(*patch.Desc)
+		}
+		if patch.Sup != nil {
+			z.Sup = strings.TrimSpace(*patch.Sup)
+		}
+		if patch.Color != nil {
+			z.Color = strings.TrimSpace(*patch.Color)
+		}
+		recalcZoneCounts(&s.Workspace)
+		out := s.Workspace.Zones[i]
+		if s.hasRepo() {
+			if err := s.repo.UpdateZone(s.persistCtx(), out); err != nil {
+				return Zone{}, wrapPersist(err)
+			}
+		}
+		return out, nil
+	}
+	return Zone{}, ErrNotFound
+}
+
 func (s *Store) GetEngineer(id string) (_ Engineer, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -436,6 +468,9 @@ func (s *Store) PatchProject(index int, patch ProjectPatch) (TaskProject, error)
 	updated := s.Frontend.Tasks.Projects[index]
 	if patch.Name != nil {
 		updated.Name = strings.TrimSpace(*patch.Name)
+	}
+	if patch.Sections != nil {
+		updated.Sections = append([]string(nil), (*patch.Sections)...)
 	}
 	if s.hasRepo() && updated.DBID != 0 {
 		if err := s.repo.UpdateTaskProject(s.persistCtx(), updated.DBID, updated.Name, updated.Sections); err != nil {

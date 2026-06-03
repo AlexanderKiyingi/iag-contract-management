@@ -34,6 +34,23 @@ func (c *WorkspaceResourcesController) GetZone(w http.ResponseWriter, r *http.Re
 	views.JSON(w, http.StatusOK, z)
 }
 
+func (c *WorkspaceResourcesController) PatchZone(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), c.model, w, "zones.update") {
+		return
+	}
+	var patch models.ZonePatch
+	if err := decodeJSON(r, &patch); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	z, err := c.model.PatchZone(lastPathSegment(r), patch)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, z)
+}
+
 func (c *WorkspaceResourcesController) ListEngineers(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), c.model, w, "users.read") {
 		return

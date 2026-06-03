@@ -21,6 +21,7 @@ type EntityRepository interface {
 
 	// Zones (only the derived contract_count is mutated by per-row writes;
 	// the zone seed itself comes from the snapshot path).
+	UpdateZone(ctx context.Context, z Zone) error
 	UpdateZoneCount(ctx context.Context, code string, count int) error
 
 	// Engineers

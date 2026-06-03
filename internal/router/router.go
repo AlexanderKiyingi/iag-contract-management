@@ -100,6 +100,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
+	g.PATCH("/zones/:code", wrap(mvc.WsRes.PatchZone))
 
 	// Engineers
 	g.GET("/engineers", wrap(mvc.WsRes.ListEngineers))

@@ -277,7 +277,15 @@ type ProjectInput struct {
 }
 
 type ProjectPatch struct {
-	Name *string `json:"name,omitempty"`
+	Name     *string   `json:"name,omitempty"`
+	Sections *[]string `json:"sections,omitempty"`
+}
+
+type ZonePatch struct {
+	Name  *string `json:"name,omitempty"`
+	Desc  *string `json:"desc,omitempty"`
+	Sup   *string `json:"sup,omitempty"`
+	Color *string `json:"color,omitempty"`
 }
 
 type TaskInput struct {
