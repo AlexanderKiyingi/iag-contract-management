@@ -317,10 +317,11 @@ permission listed in the third column; `—` means any authenticated user.
 | GET | `/v1/assistance` | — | List assistance messages (self-scoped) |
 | POST | `/v1/assistance` | canMutate | Request assistance — publishes `contracts.assistance.requested` on `iag.commercial`, dispatched as a notification |
 
-### 4.13 Profile photos
+### 4.13 Profile
 
 | Method | Path | Permission | Description |
 |---|---|---|---|
+| PATCH | `/v1/profile` | — (authenticated) | Self-service `{displayName}` for the signed-in workspace user — no `users.update` required |
 | GET | `/v1/profile/photo` | — | `?email=…` (defaults to caller); returns `{email, dataUrl}` |
 | PUT | `/v1/profile/photo` | — | Body `{email, dataUrl}` — set photo |
 | DELETE | `/v1/profile/photo` | — | `?email=…` — clear photo |
@@ -485,7 +486,12 @@ contract-management repo:
 - **No OpenAPI spec.** Routes are hand-registered in
   [`internal/router/router.go`](../internal/router/router.go). A future
   pass will add `swag` or `oapi-codegen` annotations.
-- **No SSE / WebSocket.** Use polling.
+- **No SSE / WebSocket on this service.** Use polling (`/v1/bootstrap`) and
+  **iag-notifications** (`/v1/realtime/ws` or `/stream`) for in-app alerts.
+- **No Kafka consumer** in this repo (unlike project-management). Auth/org
+  sync is not applied via events here.
+- **Scheduled work** is the separate `/app/jobs --milestone-reminders` binary
+  (Railway cron or `scripts/run-contract-management-jobs.ps1` locally).
 - **No declarative filter syntax** on list endpoints — fetch + filter
   client-side, or use `/v1/bootstrap`.
 - **No workflow verbs** like `/approve` or `/complete` — status is a

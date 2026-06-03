@@ -165,6 +165,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	g.POST("/assistance", wrap(mvc.FeRes.PostAssistance))
 
 	// Profile & uploads
+	g.PATCH("/profile", wrap(mvc.FeRes.PatchProfile))
 	g.GET("/profile/photo", wrap(mvc.Uploads.GetProfile))
 	g.PUT("/profile/photo", wrap(mvc.FeRes.PutProfilePhoto))
 	g.DELETE("/profile/photo", wrap(mvc.FeRes.DeleteProfilePhoto))

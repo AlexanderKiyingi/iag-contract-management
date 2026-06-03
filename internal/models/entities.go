@@ -238,6 +238,11 @@ type UserPatch struct {
 	CustomRoleID *string `json:"customRoleId,omitempty"`
 }
 
+// ProfilePatch is the self-service body for PATCH /v1/profile (display name only).
+type ProfilePatch struct {
+	DisplayName *string `json:"displayName,omitempty"`
+}
+
 type MilestoneInput struct {
 	Title  string `json:"title"`
 	Zone   string `json:"zone"`

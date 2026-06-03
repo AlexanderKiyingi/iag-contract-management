@@ -55,6 +55,20 @@ Run milestone reminders (cron / Railway scheduled job):
 ```
 
 Compose one-shot worker: `contract-management-jobs` (same image, different command).
+`restart: "no"` — it runs once per `docker compose up`; use Railway cron or
+`scripts/run-contract-management-jobs.ps1` in the meta-repo for recurring local runs.
+
+## Realtime (intentional split)
+
+| Concern | Where it lives |
+|---------|----------------|
+| Workspace data freshness | Frontend polls `GET /v1/bootstrap` (or granular REST after mutations) |
+| In-app notification inbox | **iag-notifications** WebSocket/SSE (`aud` must include `iag.notifications`) |
+| Milestone due-soon email/in-app | Jobs CLI → Kafka `contracts.milestone.due_soon` → notifications pipeline |
+
+This service does **not** ship a workspace WebSocket or Kafka consumer (see
+project-management for that pattern). Adding either would require Redis fan-out
+and/or consumer wiring — out of scope for the current contract-management v1 API.
 
 ## API
 

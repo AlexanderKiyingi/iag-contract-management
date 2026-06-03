@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -201,6 +202,27 @@ func (s *Store) CreateUser(in UserInput) (WorkspaceUser, error) {
 	}
 	s.Workspace.WorkspaceUsers = append(s.Workspace.WorkspaceUsers, u)
 	return u, nil
+}
+
+// PatchProfileForSession updates the signed-in user's display name without
+// users.update. Other profile fields remain on PATCH /v1/users/:id (admin).
+func (s *Store) PatchProfileForSession(ctx context.Context, patch ProfilePatch) (WorkspaceUser, error) {
+	sess := s.sessionFromCtx(ctx)
+	if sess.Email == "" {
+		return WorkspaceUser{}, ErrForbidden
+	}
+	if patch.DisplayName == nil {
+		return WorkspaceUser{}, ErrValidation
+	}
+	name := strings.TrimSpace(*patch.DisplayName)
+	if name == "" {
+		return WorkspaceUser{}, ErrValidation
+	}
+	u := s.getUserByEmail(sess.Email)
+	if u == nil {
+		return WorkspaceUser{}, ErrNotFound
+	}
+	return s.PatchUser(u.ID, UserPatch{DisplayName: &name})
 }
 
 func (s *Store) PatchUser(id string, patch UserPatch) (WorkspaceUser, error) {

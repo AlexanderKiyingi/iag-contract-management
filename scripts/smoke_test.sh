@@ -111,6 +111,8 @@ check DELETE /contracts/C-TEST 204
 
 check POST /audit 201 '{"action":"Smoke test","detail":"automated"}'
 
+check PATCH /profile 200 '{"displayName":"Smoke User"}'
+
 TINY='data:image/png;base64,iVBORw0KGgo='
 check PUT /profile/photo 200 "{\"email\":\"$USERNAME\",\"dataUrl\":\"$TINY\"}"
 check POST /uploads/profile 200 "{\"email\":\"$USERNAME\",\"dataUrl\":\"$TINY\"}"

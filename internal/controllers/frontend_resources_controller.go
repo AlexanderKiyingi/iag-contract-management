@@ -376,6 +376,20 @@ func (c *FrontendResourcesController) PostAssistance(w http.ResponseWriter, r *h
 	views.JSON(w, http.StatusCreated, msg)
 }
 
+func (c *FrontendResourcesController) PatchProfile(w http.ResponseWriter, r *http.Request) {
+	var patch models.ProfilePatch
+	if err := decodeJSON(r, &patch); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	u, err := c.model.PatchProfileForSession(r.Context(), patch)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, u)
+}
+
 func (c *FrontendResourcesController) PutProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	var in models.ProfilePhotoInput
 	if err := decodeJSON(r, &in); err != nil {
