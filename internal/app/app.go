@@ -45,6 +45,6 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 		Permissions: controllers.NewPermissionsController(store),
 		Uploads:     controllers.NewUploadsController(store),
 		Exports:     controllers.NewExportsController(store),
-		Admin:       controllers.NewAdminController(store, pg),
+		Admin:       controllers.NewAdminController(store, pg, bus),
 	}
 }

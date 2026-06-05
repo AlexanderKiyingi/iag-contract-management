@@ -159,6 +159,8 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 
 	// HTTP request audit (platform admin)
 	g.GET("/admin/audit-logs", wrap(mvc.Admin.ListAPIAuditLogs))
+	g.GET("/admin/monitoring/summary", wrap(mvc.Admin.MonitoringSummary))
+	g.GET("/admin/monitoring/activity", wrap(mvc.Admin.MonitoringActivity))
 
 	// Help
 	g.GET("/assistance", wrap(mvc.FeRes.ListAssistance))

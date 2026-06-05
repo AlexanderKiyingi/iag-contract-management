@@ -50,3 +50,44 @@ func (p *Postgres) ListAPIAuditLogs(ctx context.Context, limit int) ([]map[strin
 	}
 	return out, total, rows.Err()
 }
+
+func (p *Postgres) APIMonitoringSummary(ctx context.Context) (map[string]any, error) {
+	if p == nil || p.Pool == nil {
+		return map[string]any{"requests_24h": 0, "errors_24h": 0, "avg_duration_ms": 0}, nil
+	}
+	var total24h, errors24h int
+	var avgMs float64
+	err := p.Pool.QueryRow(ctx, `
+		SELECT
+			COUNT(*)::int,
+			COUNT(*) FILTER (WHERE status_code >= 400)::int,
+			COALESCE(AVG(duration_ms), 0)
+		FROM contract_api_audit
+		WHERE logged_at >= NOW() - INTERVAL '24 hours'
+	`).Scan(&total24h, &errors24h, &avgMs)
+	if err != nil {
+		return nil, err
+	}
+	var contracts int
+	_ = p.Pool.QueryRow(ctx, `SELECT COUNT(*)::int FROM contracts`).Scan(&contracts)
+	return map[string]any{
+		"requests_24h":    total24h,
+		"errors_24h":      errors24h,
+		"avg_duration_ms": avgMs,
+		"contracts":       contracts,
+	}, nil
+}
+
+func (p *Postgres) APIMonitoringActivity(ctx context.Context, limit int) ([]map[string]any, error) {
+	items, _, err := p.ListAPIAuditLogs(ctx, limit)
+	return items, err
+}
+
+func (p *Postgres) MonitoringSummaryWithBus(ctx context.Context, busEnabled bool) (map[string]any, error) {
+	summary, err := p.APIMonitoringSummary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	summary["event_bus_enabled"] = busEnabled
+	return summary, nil
+}
