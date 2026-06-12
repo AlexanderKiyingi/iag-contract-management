@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/alvor-technologies/iag-contract-management/internal/outbox"
 )
 
 const (
@@ -31,6 +33,19 @@ const (
 type Bus struct {
 	writer  *kafka.Writer
 	enabled bool
+	// outbox, when set, makes PublishCommercial durable: events are persisted
+	// and drained to Kafka by a background publisher instead of being written
+	// inline. nil falls back to the legacy direct-write path (used by tests).
+	outbox *outbox.Store
+}
+
+// UseOutbox switches the Bus onto the durable outbox path. Call once at boot
+// after the Postgres pool is ready; the caller is responsible for starting an
+// outbox.Publisher that drains the table.
+func (b *Bus) UseOutbox(s *outbox.Store) {
+	if b != nil {
+		b.outbox = s
+	}
 }
 
 type Config struct {
@@ -91,13 +106,25 @@ func (b *Bus) PublishCommercial(ctx context.Context, eventType string, data map[
 		SpecVersion: SpecVersion,
 		Data:        data,
 	}
+	if key == "" {
+		key = evt.ID
+	}
+
+	// Durable path: persist the event; the background publisher drains it to
+	// Kafka with retry, so a broker outage delays delivery instead of losing
+	// it. DispatchOutbox below performs the actual write.
+	if b.outbox != nil {
+		if err := b.outbox.Enqueue(ctx, eventType, key, evt); err != nil {
+			slog.Warn("contract event enqueue failed", "type", eventType, "err", err)
+		}
+		return
+	}
+
+	// Legacy direct path (outbox not configured, e.g. unit tests).
 	body, err := json.Marshal(evt)
 	if err != nil {
 		slog.Warn("contract event marshal failed", "type", eventType, "err", err)
 		return
-	}
-	if key == "" {
-		key = evt.ID
 	}
 	if err := b.writer.WriteMessages(ctx, kafka.Message{
 		Topic: TopicCommercial,
@@ -110,6 +137,26 @@ func (b *Bus) PublishCommercial(ctx context.Context, eventType string, data map[
 	}); err != nil {
 		slog.Warn("contract event publish failed", "type", eventType, "err", err)
 	}
+}
+
+// DispatchOutbox writes a persisted outbox row to Kafka. It is the
+// outbox.Dispatcher implementation the background publisher calls. The row
+// payload is the already-marshaled PlatformEvent, so this just frames it with
+// the routing key and CloudEvents headers.
+func (b *Bus) DispatchOutbox(ctx context.Context, row outbox.Row) error {
+	if !b.enabled || b.writer == nil {
+		// Bus disabled: treat as delivered so the row isn't retried forever.
+		return nil
+	}
+	return b.writer.WriteMessages(ctx, kafka.Message{
+		Topic: TopicCommercial,
+		Key:   []byte(row.EventKey),
+		Value: row.Payload,
+		Headers: []kafka.Header{
+			{Key: "ce-type", Value: []byte(row.EventType)},
+			{Key: "ce-source", Value: []byte(Source)},
+		},
+	})
 }
 
 // PublishAlert emits contracts.alert.raised for iag-notifications policy consumers.
