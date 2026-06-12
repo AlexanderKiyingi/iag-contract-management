@@ -17,6 +17,7 @@ import (
 	"github.com/alvor-technologies/iag-contract-management/internal/config"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+	"github.com/alvor-technologies/iag-contract-management/internal/outbox"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/platformauth"
 	"github.com/alvor-technologies/iag-contract-management/internal/router"
@@ -91,7 +92,13 @@ func main() {
 	eventBus := events.NewFromEnv()
 	defer func() { _ = eventBus.Close() }()
 	if eventBus.Enabled() {
-		slog.Info("event bus enabled", "topic", events.TopicCommercial)
+		// Durable outbox: events are persisted in the same Postgres as the
+		// domain data and drained to Kafka by a background publisher, so a
+		// broker outage delays delivery instead of dropping events.
+		outboxStore := outbox.NewStore(pg.Pool)
+		eventBus.UseOutbox(outboxStore)
+		go outbox.NewPublisher(outboxStore, eventBus).Run(ctx)
+		slog.Info("event bus enabled (durable outbox)", "topic", events.TopicCommercial)
 	}
 
 	engine := router.New(cfg, pg, verifier, pg, eventBus)
