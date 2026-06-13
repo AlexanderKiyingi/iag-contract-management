@@ -12,7 +12,7 @@ import (
 // ---------------- Requisitions ----------------
 
 func (g *GovernanceController) ListRequisitions(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.read") {
 		return
 	}
 	list, err := g.gov.ListRequisitions(r.Context())
@@ -24,7 +24,7 @@ func (g *GovernanceController) ListRequisitions(w http.ResponseWriter, r *http.R
 }
 
 func (g *GovernanceController) GetRequisition(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.read") {
 		return
 	}
 	rq, err := g.gov.GetRequisition(r.Context(), pathSegmentAfter(r, "requisitions"))
@@ -35,7 +35,7 @@ func (g *GovernanceController) GetRequisition(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) CreateRequisition(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.create") {
 		return
 	}
 	var in models.RequisitionInput
@@ -66,7 +66,7 @@ func (g *GovernanceController) CreateRequisition(w http.ResponseWriter, r *http.
 }
 
 func (g *GovernanceController) AdvanceRequisition(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.update") {
 		return
 	}
 	rq, err := g.gov.GetRequisition(r.Context(), pathSegmentAfter(r, "requisitions"))
@@ -98,7 +98,7 @@ func (g *GovernanceController) AdvanceRequisition(w http.ResponseWriter, r *http
 }
 
 func (g *GovernanceController) RejectRequisition(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.update") {
 		return
 	}
 	rq, err := g.gov.GetRequisition(r.Context(), pathSegmentAfter(r, "requisitions"))
@@ -117,7 +117,7 @@ func (g *GovernanceController) RejectRequisition(w http.ResponseWriter, r *http.
 // ConvertRequisition turns an approved requisition into a draft governance
 // contract and links them.
 func (g *GovernanceController) ConvertRequisition(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.update") {
 		return
 	}
 	rq, err := g.gov.GetRequisition(r.Context(), pathSegmentAfter(r, "requisitions"))
@@ -159,7 +159,7 @@ func (g *GovernanceController) ConvertRequisition(w http.ResponseWriter, r *http
 // ---------------- Obligations ----------------
 
 func (g *GovernanceController) ListObligations(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "obligations.read") {
 		return
 	}
 	list, err := g.gov.ListObligations(r.Context())
@@ -171,7 +171,7 @@ func (g *GovernanceController) ListObligations(w http.ResponseWriter, r *http.Re
 }
 
 func (g *GovernanceController) CreateObligation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "obligations.create") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -200,7 +200,7 @@ func (g *GovernanceController) CreateObligation(w http.ResponseWriter, r *http.R
 }
 
 func (g *GovernanceController) PatchObligation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "obligations.update") {
 		return
 	}
 	o, err := g.gov.GetObligation(r.Context(), lastPathSegment(r))
@@ -242,7 +242,7 @@ func (g *GovernanceController) PatchObligation(w http.ResponseWriter, r *http.Re
 }
 
 func (g *GovernanceController) DeleteObligation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "obligations.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteObligation(r.Context(), lastPathSegment(r))) {
@@ -254,7 +254,7 @@ func (g *GovernanceController) DeleteObligation(w http.ResponseWriter, r *http.R
 // ---------------- Approval rules ----------------
 
 func (g *GovernanceController) ListApprovalRules(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "approvals.read") {
 		return
 	}
 	list, err := g.gov.ListApprovalRules(r.Context())
@@ -266,7 +266,7 @@ func (g *GovernanceController) ListApprovalRules(w http.ResponseWriter, r *http.
 }
 
 func (g *GovernanceController) ResolveApprovalRoute(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "approvals.read") {
 		return
 	}
 	value, _ := strconv.ParseInt(r.URL.Query().Get("value"), 10, 64)
@@ -284,7 +284,7 @@ func (g *GovernanceController) ResolveApprovalRoute(w http.ResponseWriter, r *ht
 }
 
 func (g *GovernanceController) UpsertApprovalRule(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "approvals.update") {
 		return
 	}
 	var in models.ApprovalRuleInput
@@ -316,7 +316,7 @@ func (g *GovernanceController) UpsertApprovalRule(w http.ResponseWriter, r *http
 }
 
 func (g *GovernanceController) DeleteApprovalRule(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "approvals.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteApprovalRule(r.Context(), lastPathSegment(r))) {
@@ -328,7 +328,7 @@ func (g *GovernanceController) DeleteApprovalRule(w http.ResponseWriter, r *http
 // ---------------- Templates ----------------
 
 func (g *GovernanceController) ListTemplates(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "templates.read") {
 		return
 	}
 	list, err := g.gov.ListTemplates(r.Context())
@@ -340,7 +340,7 @@ func (g *GovernanceController) ListTemplates(w http.ResponseWriter, r *http.Requ
 }
 
 func (g *GovernanceController) UpsertTemplate(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "templates.update") {
 		return
 	}
 	var in models.TemplateInput
@@ -369,7 +369,7 @@ func (g *GovernanceController) UpsertTemplate(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "templates.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteTemplate(r.Context(), lastPathSegment(r))) {
@@ -381,7 +381,7 @@ func (g *GovernanceController) DeleteTemplate(w http.ResponseWriter, r *http.Req
 // ---------------- Clauses ----------------
 
 func (g *GovernanceController) ListClauses(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "clauses.read") {
 		return
 	}
 	list, err := g.gov.ListClauses(r.Context())
@@ -393,7 +393,7 @@ func (g *GovernanceController) ListClauses(w http.ResponseWriter, r *http.Reques
 }
 
 func (g *GovernanceController) UpsertClause(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "clauses.update") {
 		return
 	}
 	var in models.ClauseInput
@@ -419,7 +419,7 @@ func (g *GovernanceController) UpsertClause(w http.ResponseWriter, r *http.Reque
 }
 
 func (g *GovernanceController) DeleteClause(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "clauses.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteClause(r.Context(), lastPathSegment(r))) {
@@ -431,7 +431,7 @@ func (g *GovernanceController) DeleteClause(w http.ResponseWriter, r *http.Reque
 // ---------------- Budgets ----------------
 
 func (g *GovernanceController) ListBudgets(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "budgets.read") {
 		return
 	}
 	list, err := g.gov.ListBudgets(r.Context())
@@ -443,7 +443,7 @@ func (g *GovernanceController) ListBudgets(w http.ResponseWriter, r *http.Reques
 }
 
 func (g *GovernanceController) UpsertBudget(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "budgets.update") {
 		return
 	}
 	var in models.BudgetInput
@@ -464,7 +464,7 @@ func (g *GovernanceController) UpsertBudget(w http.ResponseWriter, r *http.Reque
 }
 
 func (g *GovernanceController) DeleteBudget(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "budgets.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteBudget(r.Context(), lastPathSegment(r))) {
@@ -476,7 +476,7 @@ func (g *GovernanceController) DeleteBudget(w http.ResponseWriter, r *http.Reque
 // ---------------- Closeout ----------------
 
 func (g *GovernanceController) GetCloseout(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "closeout.read") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -493,7 +493,7 @@ func (g *GovernanceController) GetCloseout(w http.ResponseWriter, r *http.Reques
 }
 
 func (g *GovernanceController) UpsertCloseout(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "closeout.update") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))

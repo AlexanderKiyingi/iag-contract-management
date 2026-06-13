@@ -29,7 +29,7 @@ func (g *GovernanceController) actor(r *http.Request, override string) string {
 // CreatePayment opens the payment workflow for a milestone (amount defaults to
 // the milestone value, retention to the contract's).
 func (g *GovernanceController) CreatePayment(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "payments.create") {
 		return
 	}
 	mID := pathSegmentAfter(r, "milestones")
@@ -65,7 +65,7 @@ func (g *GovernanceController) CreatePayment(w http.ResponseWriter, r *http.Requ
 }
 
 func (g *GovernanceController) GetPayment(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "payments.read") {
 		return
 	}
 	p, err := g.gov.GetPayment(r.Context(), pathSegmentAfter(r, "payments"))
@@ -79,7 +79,7 @@ func (g *GovernanceController) GetPayment(w http.ResponseWriter, r *http.Request
 // emits an event finance consumes to book the AP; marking paid flips the
 // milestone to Paid.
 func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "payments.update") {
 		return
 	}
 	p, err := g.gov.GetPayment(r.Context(), pathSegmentAfter(r, "payments"))
@@ -132,7 +132,7 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 // ----- Variations -----
 
 func (g *GovernanceController) ListVariations(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "variations.read") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -148,7 +148,7 @@ func (g *GovernanceController) ListVariations(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) CreateVariation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "variations.create") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -177,7 +177,7 @@ func (g *GovernanceController) CreateVariation(w http.ResponseWriter, r *http.Re
 // AdvanceVariation records the next approval. On full approval the contract
 // value is adjusted and an event is emitted.
 func (g *GovernanceController) AdvanceVariation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "variations.update") {
 		return
 	}
 	v, err := g.gov.GetVariation(r.Context(), pathSegmentAfter(r, "variations"))
@@ -211,7 +211,7 @@ func (g *GovernanceController) AdvanceVariation(w http.ResponseWriter, r *http.R
 }
 
 func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "variations.update") {
 		return
 	}
 	v, err := g.gov.GetVariation(r.Context(), pathSegmentAfter(r, "variations"))
