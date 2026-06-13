@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // ---------------- Requisitions ----------------
 
@@ -142,7 +145,7 @@ func ResolveApprovalRoute(rules []GovApprovalRule, value int64) *GovApprovalRule
 	var best *GovApprovalRule
 	for i := range rules {
 		r := &rules[i]
-		if r.Status != "Active" {
+		if !strings.EqualFold(r.Status, "Active") {
 			continue
 		}
 		if value < r.MinValue {

@@ -62,7 +62,20 @@ func Load() Config {
 	issuer := envStr("JWT_ISSUER", "http://localhost:3001")
 	jwksURL := envStr("JWKS_URL", strings.TrimRight(issuer, "/")+"/.well-known/jwks.json")
 
+	// corsenv.Allowlist always falls back to the permissive dev origins when no
+	// CORS env var is set (even for an empty fallback). That's fine outside
+	// production, but in production an unset allowlist must stay empty so
+	// Validate() fails closed rather than silently admitting localhost.
 	origins := corsenv.Allowlist(corsenv.DefaultDevOrigins)
+	if env == "production" {
+		origins = ""
+		for _, key := range corsenv.EnvKeys {
+			if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+				origins = v
+				break
+			}
+		}
+	}
 	var allowed []string
 	for _, o := range strings.Split(origins, ",") {
 		if t := strings.TrimSpace(o); t != "" {
