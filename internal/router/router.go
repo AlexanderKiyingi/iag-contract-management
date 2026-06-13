@@ -112,6 +112,15 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	gov.PUT("/milestones/:id", wrap(mvc.Governance.PatchMilestone))
 	gov.DELETE("/milestones/:id", wrap(mvc.Governance.DeleteMilestone))
 
+	// Phase 2: milestone payments + contract variations (multi-stage workflows).
+	gov.POST("/milestones/:id/payment", wrap(mvc.Governance.CreatePayment))
+	gov.GET("/payments/:id", wrap(mvc.Governance.GetPayment))
+	gov.POST("/payments/:id/advance", wrap(mvc.Governance.AdvancePayment))
+	gov.GET("/contracts/:id/variations", wrap(mvc.Governance.ListVariations))
+	gov.POST("/contracts/:id/variations", wrap(mvc.Governance.CreateVariation))
+	gov.POST("/variations/:id/advance", wrap(mvc.Governance.AdvanceVariation))
+	gov.POST("/variations/:id/reject", wrap(mvc.Governance.RejectVariation))
+
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
