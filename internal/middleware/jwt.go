@@ -30,12 +30,22 @@ func GinPlatformAuth(v *platformauth.Verifier, lookup ContractorLookup, store *m
 			return
 		}
 
+		// Browsers cannot set an Authorization header on a WebSocket, so the
+		// workspace socket carries the access token as a ?token= query param.
+		// The gateway also injects the header for WS upgrades, but accepting the
+		// query form here keeps direct (non-gateway) connections working too.
+		var token string
 		header := c.GetHeader("Authorization")
-		if header == "" || !strings.HasPrefix(header, "Bearer ") {
+		switch {
+		case strings.HasPrefix(header, "Bearer "):
+			token = strings.TrimPrefix(header, "Bearer ")
+		case strings.EqualFold(c.GetHeader("Upgrade"), "websocket"):
+			token = c.Query("token")
+		}
+		if token == "" {
 			apierr.Unauthorized(c, "missing bearer token")
 			return
 		}
-		token := strings.TrimPrefix(header, "Bearer ")
 		claims, err := v.Verify(token)
 		if err != nil {
 			apierr.Unauthorized(c, "invalid or expired token")

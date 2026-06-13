@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,9 @@ import (
 // http.Server WriteTimeout will catch it instead.
 func GinTimeout(d time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if isHealthPath(c.Request.URL.Path) {
+		// Health probes and the long-lived workspace WebSocket bypass the
+		// per-request deadline — a streaming socket must not be cancelled.
+		if isHealthPath(c.Request.URL.Path) || strings.Contains(c.Request.URL.Path, "/ws/") {
 			c.Next()
 			return
 		}
@@ -42,4 +45,3 @@ func isHealthPath(path string) bool {
 	}
 	return false
 }
-

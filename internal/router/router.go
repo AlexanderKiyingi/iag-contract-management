@@ -12,6 +12,7 @@ import (
 	"github.com/alvor-technologies/iag-contract-management/internal/middleware"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/platformauth"
+	"github.com/alvor-technologies/iag-contract-management/internal/realtime"
 )
 
 // New builds the Gin HTTP engine with all API routes under /v1.
@@ -29,6 +30,7 @@ func New(
 	}
 
 	mvc := app.NewMVC(cfg, pg, bus)
+	hub := realtime.NewHub(mvc.Model)
 
 	r := gin.New()
 	// Trust only the upstream proxies operators explicitly listed. Without
@@ -54,6 +56,8 @@ func New(
 	r.Use(middleware.GinPlatformAuth(verifier, contractors, mvc.Model))
 	r.Use(middleware.GinRateLimit(cfg.RateLimitPerMin))
 	r.Use(middleware.RequestAudit(pg))
+	// Push the updated workspace to live WS clients after any successful mutation.
+	r.Use(middleware.GinBroadcastWorkspace(hub))
 	// Request log runs last so handler-applied status codes are visible.
 	r.Use(middleware.GinLogger())
 
@@ -65,16 +69,19 @@ func New(
 	r.GET("/health/ready", wrap(mvc.Health.Ready))
 	r.GET("/ready", wrap(mvc.Health.Ready))
 
-	registerRoutes(r.Group("/v1"), mvc)
+	registerRoutes(r.Group("/v1"), mvc, hub)
 	return r
 }
 
-func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
+func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	wrap := gin.WrapF
 
 	g.GET("/health", wrap(mvc.Health.Check))
 	g.GET("/health/live", wrap(mvc.Health.Live))
 	g.GET("/health/ready", wrap(mvc.Health.Ready))
+
+	// Workspace live stream (progressive enhancement; UI falls back to polling).
+	g.GET("/ws/workspace", wrap(hub.ServeWS))
 
 	// Session is the only auth surface this service exposes; login/refresh/logout
 	// live on the platform authentication service at /api/v1/authentication/oauth/token.
