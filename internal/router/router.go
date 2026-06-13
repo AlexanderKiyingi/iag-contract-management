@@ -97,6 +97,21 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	g.PUT("/contracts/:no", wrap(mvc.Contracts.Patch))
 	g.DELETE("/contracts/:no", wrap(mvc.Contracts.Delete))
 
+	// Governance contracts (the contract-lifecycle domain behind the Contract
+	// Governance UI) — modeled separately from the zone-works contracts above.
+	gov := g.Group("/governance")
+	gov.GET("/contracts", wrap(mvc.Governance.ListContracts))
+	gov.POST("/contracts", wrap(mvc.Governance.CreateContract))
+	gov.GET("/contracts/:id", wrap(mvc.Governance.GetContract))
+	gov.PATCH("/contracts/:id", wrap(mvc.Governance.PatchContract))
+	gov.PUT("/contracts/:id", wrap(mvc.Governance.PatchContract))
+	gov.DELETE("/contracts/:id", wrap(mvc.Governance.DeleteContract))
+	gov.GET("/contracts/:id/milestones", wrap(mvc.Governance.ListMilestones))
+	gov.POST("/contracts/:id/milestones", wrap(mvc.Governance.CreateMilestone))
+	gov.PATCH("/milestones/:id", wrap(mvc.Governance.PatchMilestone))
+	gov.PUT("/milestones/:id", wrap(mvc.Governance.PatchMilestone))
+	gov.DELETE("/milestones/:id", wrap(mvc.Governance.DeleteMilestone))
+
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))

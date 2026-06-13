@@ -20,6 +20,7 @@ type MVC struct {
 	Frontend    *controllers.FrontendController
 	FeRes       *controllers.FrontendResourcesController
 	Contracts   *controllers.ContractController
+	Governance  *controllers.GovernanceController
 	Permissions *controllers.PermissionsController
 	Uploads     *controllers.UploadsController
 	Exports     *controllers.ExportsController
@@ -42,6 +43,7 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 		Frontend:    controllers.NewFrontendController(store),
 		FeRes:       controllers.NewFrontendResourcesController(store, bus),
 		Contracts:   controllers.NewContractController(store, bus),
+		Governance:  controllers.NewGovernanceController(store, persistence.NewGovStore(pg.Pool), bus),
 		Permissions: controllers.NewPermissionsController(store),
 		Uploads:     controllers.NewUploadsController(store),
 		Exports:     controllers.NewExportsController(store),
