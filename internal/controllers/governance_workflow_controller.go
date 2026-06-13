@@ -99,17 +99,24 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 		views.WriteError(w, err)
 		return
 	}
-	if g.events != nil {
+	if g.events != nil && (authorized || paid) {
+		// Enrich with the contractor (vendor) and contract number so finance can
+		// book the AP without a second lookup.
+		var contractor, number string
+		if c, cerr := g.gov.GetContract(r.Context(), updated.ContractID); cerr == nil {
+			contractor, number = c.Contractor, c.Number
+		}
 		if authorized {
 			g.events.PublishCommercial(r.Context(), "contracts.payment.authorized", map[string]any{
-				"paymentId": updated.ID, "contractId": updated.ContractID, "milestoneId": updated.MilestoneID,
+				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
+				"contractor": contractor, "milestoneId": updated.MilestoneID,
 				"amount": updated.Amount, "payable": updated.Payable, "retention": updated.Retention,
 			}, updated.ID)
 		}
 		if paid {
 			g.events.PublishCommercial(r.Context(), "contracts.payment.paid", map[string]any{
-				"paymentId": updated.ID, "contractId": updated.ContractID, "milestoneId": updated.MilestoneID,
-				"payable": updated.Payable,
+				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
+				"contractor": contractor, "milestoneId": updated.MilestoneID, "payable": updated.Payable,
 			}, updated.ID)
 		}
 	}
