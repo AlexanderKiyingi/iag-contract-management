@@ -121,6 +121,40 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC) {
 	gov.POST("/variations/:id/advance", wrap(mvc.Governance.AdvanceVariation))
 	gov.POST("/variations/:id/reject", wrap(mvc.Governance.RejectVariation))
 
+	// Phase 3: requisitions, obligations, approval rules, templates, clauses,
+	// budgets, closeout.
+	gov.GET("/requisitions", wrap(mvc.Governance.ListRequisitions))
+	gov.POST("/requisitions", wrap(mvc.Governance.CreateRequisition))
+	gov.GET("/requisitions/:id", wrap(mvc.Governance.GetRequisition))
+	gov.POST("/requisitions/:id/advance", wrap(mvc.Governance.AdvanceRequisition))
+	gov.POST("/requisitions/:id/reject", wrap(mvc.Governance.RejectRequisition))
+	gov.POST("/requisitions/:id/convert", wrap(mvc.Governance.ConvertRequisition))
+
+	gov.GET("/obligations", wrap(mvc.Governance.ListObligations))
+	gov.POST("/contracts/:id/obligations", wrap(mvc.Governance.CreateObligation))
+	gov.PATCH("/obligations/:id", wrap(mvc.Governance.PatchObligation))
+	gov.DELETE("/obligations/:id", wrap(mvc.Governance.DeleteObligation))
+
+	gov.GET("/approval-rules", wrap(mvc.Governance.ListApprovalRules))
+	gov.GET("/approval-rules/resolve", wrap(mvc.Governance.ResolveApprovalRoute))
+	gov.POST("/approval-rules", wrap(mvc.Governance.UpsertApprovalRule))
+	gov.DELETE("/approval-rules/:id", wrap(mvc.Governance.DeleteApprovalRule))
+
+	gov.GET("/templates", wrap(mvc.Governance.ListTemplates))
+	gov.POST("/templates", wrap(mvc.Governance.UpsertTemplate))
+	gov.DELETE("/templates/:id", wrap(mvc.Governance.DeleteTemplate))
+
+	gov.GET("/clauses", wrap(mvc.Governance.ListClauses))
+	gov.POST("/clauses", wrap(mvc.Governance.UpsertClause))
+	gov.DELETE("/clauses/:id", wrap(mvc.Governance.DeleteClause))
+
+	gov.GET("/budgets", wrap(mvc.Governance.ListBudgets))
+	gov.POST("/budgets", wrap(mvc.Governance.UpsertBudget))
+	gov.DELETE("/budgets/:code", wrap(mvc.Governance.DeleteBudget))
+
+	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))
+	gov.PUT("/contracts/:id/closeout", wrap(mvc.Governance.UpsertCloseout))
+
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
