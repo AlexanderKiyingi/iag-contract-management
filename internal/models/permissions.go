@@ -68,6 +68,17 @@ var (
 		{ID: "audit", Label: "Audit log"},
 		{ID: "reports", Label: "Reports"},
 		{ID: "insights", Label: "AI & insights"},
+		// Contract-governance modules (back the Contract Governance UI). "update"
+		// is the approve/advance action for the workflow modules (payments,
+		// variations, requisitions).
+		{ID: "requisitions", Label: "Requisitions"},
+		{ID: "variations", Label: "Variations"},
+		{ID: "obligations", Label: "Obligations"},
+		{ID: "approvals", Label: "Approval rules"},
+		{ID: "templates", Label: "Templates"},
+		{ID: "clauses", Label: "Clause library"},
+		{ID: "budgets", Label: "Budgets"},
+		{ID: "closeout", Label: "Closeout"},
 	}
 	crudActions = []CrudAction{
 		{Key: "create", Label: "Create"},
@@ -84,18 +95,29 @@ var (
 	}
 	builtinRoles  = []string{"super_admin", "admin", "manager", "viewer", "contractor"}
 	legacyAliases = map[string][]string{
-		"portfolio.view":    {"contracts.read", "zones.read"},
-		"portfolio.edit":    {"contracts.create", "contracts.read", "contracts.update", "zones.read", "zones.update"},
-		"portfolio.delete":  {"contracts.delete"},
-		"payments.view":     {"payments.read"},
-		"tasks.manage":      {"tasks.create", "tasks.read", "tasks.update", "tasks.delete"},
-		"milestones.manage": {"milestones.create", "milestones.read", "milestones.update", "milestones.delete"},
-		"materials.manage":  {"materials.create", "materials.read", "materials.update", "materials.delete"},
-		"users.manage":      {"users.create", "users.read", "users.update", "users.delete"},
-		"roles.manage":      {"roles.create", "roles.read", "roles.update", "roles.delete"},
-		"audit.view":        {"audit.read"},
-		"reports.export":    {"reports.read", "reports.create"},
-		"insights.run":      {"insights.read", "insights.update"},
+		"portfolio.view":       {"contracts.read", "zones.read"},
+		"portfolio.edit":       {"contracts.create", "contracts.read", "contracts.update", "zones.read", "zones.update"},
+		"portfolio.delete":     {"contracts.delete"},
+		"payments.view":        {"payments.read"},
+		"tasks.manage":         {"tasks.create", "tasks.read", "tasks.update", "tasks.delete"},
+		"milestones.manage":    {"milestones.create", "milestones.read", "milestones.update", "milestones.delete"},
+		"materials.manage":     {"materials.create", "materials.read", "materials.update", "materials.delete"},
+		"users.manage":         {"users.create", "users.read", "users.update", "users.delete"},
+		"roles.manage":         {"roles.create", "roles.read", "roles.update", "roles.delete"},
+		"audit.view":           {"audit.read"},
+		"reports.export":       {"reports.read", "reports.create"},
+		"insights.run":         {"insights.read", "insights.update"},
+		"requisitions.manage":  {"requisitions.create", "requisitions.read", "requisitions.update"},
+		"requisitions.approve": {"requisitions.update"},
+		"variations.manage":    {"variations.create", "variations.read", "variations.update"},
+		"variations.approve":   {"variations.update"},
+		"payments.approve":     {"payments.update"},
+		"obligations.manage":   {"obligations.create", "obligations.read", "obligations.update", "obligations.delete"},
+		"approvals.manage":     {"approvals.create", "approvals.read", "approvals.update", "approvals.delete"},
+		"templates.manage":     {"templates.create", "templates.read", "templates.update", "templates.delete"},
+		"clauses.manage":       {"clauses.create", "clauses.read", "clauses.update", "clauses.delete"},
+		"budgets.manage":       {"budgets.create", "budgets.read", "budgets.update", "budgets.delete"},
+		"closeout.manage":      {"closeout.create", "closeout.read", "closeout.update"},
 	}
 )
 
@@ -292,18 +314,30 @@ func permissionsForRole(role string) []string {
 		add("audit", "read")
 		add("reports", "read", "create")
 		add("insights", "read", "update")
+		// Governance: managers run the operational modules; config (rules,
+		// templates, clauses, budgets) is read-only for them.
+		add("requisitions", "create", "read", "update")
+		add("variations", "create", "read", "update")
+		add("obligations", "create", "read", "update", "delete")
+		add("closeout", "create", "read", "update")
+		add("approvals", "read")
+		add("templates", "read")
+		add("clauses", "read")
+		add("budgets", "read")
 		return out
 	case "contractor":
-		return []string{"contracts.read"}
+		return []string{"contracts.read", "milestones.read", "obligations.read"}
 	}
 	return nil
 }
 
 // Legacy wrappers kept so call-sites don't need updates.
-func (s *Store) HasPermission(key string) bool  { return s.HasPermissionCtx(context.Background(), key) }
-func (s *Store) CanMutate() bool                { return s.CanMutateCtx(context.Background()) }
-func (s *Store) CanManageRoles() bool           { return s.CanManageRolesCtx(context.Background()) }
-func (s *Store) CanEditContract(no string) bool { return s.CanEditContractCtx(context.Background(), no) }
+func (s *Store) HasPermission(key string) bool { return s.HasPermissionCtx(context.Background(), key) }
+func (s *Store) CanMutate() bool               { return s.CanMutateCtx(context.Background()) }
+func (s *Store) CanManageRoles() bool          { return s.CanManageRolesCtx(context.Background()) }
+func (s *Store) CanEditContract(no string) bool {
+	return s.CanEditContractCtx(context.Background(), no)
+}
 func (s *Store) PermissionContext() PermissionContext {
 	return s.PermissionContextFor(context.Background())
 }

@@ -105,7 +105,7 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) PatchContract(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "contracts.update") {
 		return
 	}
 	existing, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -165,7 +165,7 @@ func (g *GovernanceController) DeleteContract(w http.ResponseWriter, r *http.Req
 // ----- Milestones -----
 
 func (g *GovernanceController) ListMilestones(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+	if !requirePerm(r.Context(), g.model, w, "milestones.read") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -176,7 +176,7 @@ func (g *GovernanceController) ListMilestones(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) CreateMilestone(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "milestones.create") {
 		return
 	}
 	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
@@ -211,7 +211,7 @@ func (g *GovernanceController) CreateMilestone(w http.ResponseWriter, r *http.Re
 }
 
 func (g *GovernanceController) PatchMilestone(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.create") {
+	if !requirePerm(r.Context(), g.model, w, "milestones.update") {
 		return
 	}
 	existing, err := g.gov.GetMilestone(r.Context(), lastPathSegment(r))
@@ -233,7 +233,7 @@ func (g *GovernanceController) PatchMilestone(w http.ResponseWriter, r *http.Req
 }
 
 func (g *GovernanceController) DeleteMilestone(w http.ResponseWriter, r *http.Request) {
-	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
+	if !requirePerm(r.Context(), g.model, w, "milestones.delete") {
 		return
 	}
 	if g.handleErr(w, g.gov.DeleteMilestone(r.Context(), lastPathSegment(r))) {
