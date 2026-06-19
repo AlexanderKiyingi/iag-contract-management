@@ -4,7 +4,7 @@
 #
 #   docker build -f services/commercial/contract-management/Dockerfile.monorepo --target monorepo .
 
-FROM golang:1.23-alpine AS base
+FROM golang:1.24-alpine AS base
 RUN apk add --no-cache ca-certificates
 ENV PLATFORM_GO_DEP=/deps/platform-go
 

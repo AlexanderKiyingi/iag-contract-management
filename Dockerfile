@@ -1,7 +1,7 @@
 # Standalone image for Railway and iag-contract-management repo root builds.
 # Monorepo compose/CI: use Dockerfile.monorepo (--target monorepo).
 
-FROM golang:1.23-alpine AS build
+FROM golang:1.24-alpine AS build
 RUN apk add --no-cache ca-certificates
 WORKDIR /src
 COPY third_party/platform-go /deps/platform-go

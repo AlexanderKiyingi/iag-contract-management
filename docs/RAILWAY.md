@@ -55,7 +55,7 @@ Using detected Dockerfile!
 ==========================
 ```
 
-followed by Docker `FROM golang:1.23-alpine` steps — not `Railpack 0.x.x`.
+followed by Docker `FROM golang:1.24-alpine` steps — not `Railpack 0.x.x`.
 
 ### If build logs stop at "scheduling build on Metal builder"
 
