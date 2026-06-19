@@ -64,6 +64,22 @@ func (g *GovernanceController) CreatePayment(w http.ResponseWriter, r *http.Requ
 	views.JSON(w, http.StatusCreated, created)
 }
 
+// ListPayments returns the payment queue across all milestones, filterable by
+// ?contractId= and ?status= — the finance payment dashboard.
+func (g *GovernanceController) ListPayments(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "payments.read") {
+		return
+	}
+	list, err := g.gov.ListPayments(r.Context(),
+		strings.TrimSpace(r.URL.Query().Get("contractId")),
+		strings.TrimSpace(r.URL.Query().Get("status")))
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
 func (g *GovernanceController) GetPayment(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "payments.read") {
 		return
@@ -145,6 +161,34 @@ func (g *GovernanceController) ListVariations(w http.ResponseWriter, r *http.Req
 		return
 	}
 	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+// ListAllVariations returns variations across all contracts, filterable by
+// ?contractId= and ?status= — the variations approval queue.
+func (g *GovernanceController) ListAllVariations(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "variations.read") {
+		return
+	}
+	list, err := g.gov.ListAllVariations(r.Context(),
+		strings.TrimSpace(r.URL.Query().Get("contractId")),
+		strings.TrimSpace(r.URL.Query().Get("status")))
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+// GetVariation returns a single variation by id.
+func (g *GovernanceController) GetVariation(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "variations.read") {
+		return
+	}
+	v, err := g.gov.GetVariation(r.Context(), pathSegmentAfter(r, "variations"))
+	if g.handleErr(w, err) {
+		return
+	}
+	views.JSON(w, http.StatusOK, v)
 }
 
 func (g *GovernanceController) CreateVariation(w http.ResponseWriter, r *http.Request) {

@@ -121,10 +121,13 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	// Phase 2: milestone payments + contract variations (multi-stage workflows).
 	gov.POST("/milestones/:id/payment", wrap(mvc.Governance.CreatePayment))
+	gov.GET("/payments", wrap(mvc.Governance.ListPayments))
 	gov.GET("/payments/:id", wrap(mvc.Governance.GetPayment))
 	gov.POST("/payments/:id/advance", wrap(mvc.Governance.AdvancePayment))
 	gov.GET("/contracts/:id/variations", wrap(mvc.Governance.ListVariations))
 	gov.POST("/contracts/:id/variations", wrap(mvc.Governance.CreateVariation))
+	gov.GET("/variations", wrap(mvc.Governance.ListAllVariations))
+	gov.GET("/variations/:id", wrap(mvc.Governance.GetVariation))
 	gov.POST("/variations/:id/advance", wrap(mvc.Governance.AdvanceVariation))
 	gov.POST("/variations/:id/reject", wrap(mvc.Governance.RejectVariation))
 
@@ -180,6 +183,18 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.GET("/valuations/:id", wrap(mvc.Governance.GetValuation))
 	gov.PATCH("/valuations/:id", wrap(mvc.Governance.UpdateValuation))
 	gov.DELETE("/valuations/:id", wrap(mvc.Governance.DeleteValuation))
+
+	gov.GET("/challenges", wrap(mvc.Governance.ListChallenges))
+	gov.POST("/challenges", wrap(mvc.Governance.CreateChallenge))
+	gov.GET("/challenges/:id", wrap(mvc.Governance.GetChallenge))
+	gov.PATCH("/challenges/:id", wrap(mvc.Governance.UpdateChallenge))
+	gov.DELETE("/challenges/:id", wrap(mvc.Governance.DeleteChallenge))
+
+	gov.GET("/action-items", wrap(mvc.Governance.ListActionItems))
+	gov.POST("/action-items", wrap(mvc.Governance.CreateActionItem))
+	gov.GET("/action-items/:id", wrap(mvc.Governance.GetActionItem))
+	gov.PATCH("/action-items/:id", wrap(mvc.Governance.UpdateActionItem))
+	gov.DELETE("/action-items/:id", wrap(mvc.Governance.DeleteActionItem))
 
 	gov.GET("/summary", wrap(mvc.Governance.MonthlySummaryReport))
 

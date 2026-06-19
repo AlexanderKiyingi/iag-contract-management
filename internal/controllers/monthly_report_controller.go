@@ -293,6 +293,214 @@ func (g *GovernanceController) DeleteValuation(w http.ResponseWriter, r *http.Re
 	views.NoContent(w)
 }
 
+// ----- Challenges register -----
+
+func (g *GovernanceController) ListChallenges(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "challenges.read") {
+		return
+	}
+	list, err := g.gov.ListChallenges(r.Context(), strings.TrimSpace(r.URL.Query().Get("period")))
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+func (g *GovernanceController) GetChallenge(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "challenges.read") {
+		return
+	}
+	c, err := g.gov.GetChallenge(r.Context(), pathSegmentAfter(r, "challenges"))
+	if g.handleErr(w, err) {
+		return
+	}
+	views.JSON(w, http.StatusOK, c)
+}
+
+func (g *GovernanceController) CreateChallenge(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "challenges.create") {
+		return
+	}
+	var in models.ChallengeInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(in.Period) == "" {
+		views.Error(w, http.StatusBadRequest, "period is required")
+		return
+	}
+	if strings.TrimSpace(in.Description) == "" {
+		views.Error(w, http.StatusBadRequest, "description is required")
+		return
+	}
+	created, err := g.gov.CreateChallenge(r.Context(), models.Challenge{
+		ID:          models.NewGovID("GCHL"),
+		Period:      strings.TrimSpace(in.Period),
+		Category:    in.Category,
+		Description: strings.TrimSpace(in.Description),
+		Affected:    in.Affected,
+		Priority:    valOr(in.Priority, "Medium"),
+		Action:      in.Action,
+		Owner:       in.Owner,
+	})
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusCreated, created)
+}
+
+func (g *GovernanceController) UpdateChallenge(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "challenges.update") {
+		return
+	}
+	existing, err := g.gov.GetChallenge(r.Context(), pathSegmentAfter(r, "challenges"))
+	if g.handleErr(w, err) {
+		return
+	}
+	var in models.ChallengeInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	existing.Category = in.Category
+	if strings.TrimSpace(in.Description) != "" {
+		existing.Description = strings.TrimSpace(in.Description)
+	}
+	existing.Affected = in.Affected
+	if strings.TrimSpace(in.Priority) != "" {
+		existing.Priority = in.Priority
+	}
+	existing.Action = in.Action
+	existing.Owner = in.Owner
+	updated, err := g.gov.UpdateChallenge(r.Context(), *existing)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, updated)
+}
+
+func (g *GovernanceController) DeleteChallenge(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "challenges.delete") {
+		return
+	}
+	if g.handleErr(w, g.gov.DeleteChallenge(r.Context(), pathSegmentAfter(r, "challenges"))) {
+		return
+	}
+	views.NoContent(w)
+}
+
+// ----- Action-item tracker -----
+
+func (g *GovernanceController) ListActionItems(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "actionitems.read") {
+		return
+	}
+	list, err := g.gov.ListActionItems(r.Context(), strings.TrimSpace(r.URL.Query().Get("period")))
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+func (g *GovernanceController) GetActionItem(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "actionitems.read") {
+		return
+	}
+	a, err := g.gov.GetActionItem(r.Context(), pathSegmentAfter(r, "action-items"))
+	if g.handleErr(w, err) {
+		return
+	}
+	views.JSON(w, http.StatusOK, a)
+}
+
+func (g *GovernanceController) CreateActionItem(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "actionitems.create") {
+		return
+	}
+	var in models.ActionItemInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(in.Period) == "" {
+		views.Error(w, http.StatusBadRequest, "period is required")
+		return
+	}
+	if strings.TrimSpace(in.Text) == "" {
+		views.Error(w, http.StatusBadRequest, "text is required")
+		return
+	}
+	created, err := g.gov.CreateActionItem(r.Context(), models.ActionItem{
+		ID:       models.NewGovID("GACT"),
+		Period:   strings.TrimSpace(in.Period),
+		Priority: valOr(in.Priority, "Medium"),
+		Text:     strings.TrimSpace(in.Text),
+		Party:    in.Party,
+		Target:   in.Target,
+		Status:   valOr(in.Status, "Pending"),
+	})
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusCreated, created)
+}
+
+func (g *GovernanceController) UpdateActionItem(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "actionitems.update") {
+		return
+	}
+	existing, err := g.gov.GetActionItem(r.Context(), pathSegmentAfter(r, "action-items"))
+	if g.handleErr(w, err) {
+		return
+	}
+	var in models.ActionItemInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(in.Priority) != "" {
+		existing.Priority = in.Priority
+	}
+	if strings.TrimSpace(in.Text) != "" {
+		existing.Text = strings.TrimSpace(in.Text)
+	}
+	existing.Party = in.Party
+	existing.Target = in.Target
+	if strings.TrimSpace(in.Status) != "" {
+		existing.Status = in.Status
+	}
+	updated, err := g.gov.UpdateActionItem(r.Context(), *existing)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, updated)
+}
+
+func (g *GovernanceController) DeleteActionItem(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "actionitems.delete") {
+		return
+	}
+	if g.handleErr(w, g.gov.DeleteActionItem(r.Context(), pathSegmentAfter(r, "action-items"))) {
+		return
+	}
+	views.NoContent(w)
+}
+
+// valOr returns v trimmed, or fallback when v is blank.
+func valOr(v, fallback string) string {
+	if strings.TrimSpace(v) == "" {
+		return fallback
+	}
+	return strings.TrimSpace(v)
+}
+
 // ----- Executive summary rollup -----
 
 func (g *GovernanceController) MonthlySummaryReport(w http.ResponseWriter, r *http.Request) {

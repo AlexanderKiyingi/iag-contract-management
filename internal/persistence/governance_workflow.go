@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -58,6 +60,42 @@ func (s *GovStore) UpdatePayment(ctx context.Context, p models.GovPayment) (*mod
 	return pp, err
 }
 
+// ListPayments returns the payment queue across all milestones, newest first,
+// with optional contract and status filters (the basis for the finance payment
+// dashboard). An empty filter matches everything.
+func (s *GovStore) ListPayments(ctx context.Context, contractID, status string) ([]models.GovPayment, error) {
+	q := `SELECT id, milestone_id, contract_id, amount, retention, payable, stage, status, history, created_at, updated_at
+		FROM gov_payments`
+	args := []any{}
+	conds := []string{}
+	if contractID != "" {
+		args = append(args, contractID)
+		conds = append(conds, "contract_id = $"+strconv.Itoa(len(args)))
+	}
+	if status != "" {
+		args = append(args, status)
+		conds = append(conds, "status = $"+strconv.Itoa(len(args)))
+	}
+	if len(conds) > 0 {
+		q += " WHERE " + strings.Join(conds, " AND ")
+	}
+	q += " ORDER BY created_at DESC"
+	rows, err := s.pool.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.GovPayment{}
+	for rows.Next() {
+		p, err := scanPayment(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *p)
+	}
+	return out, rows.Err()
+}
+
 func scanPayment(row pgx.Row) (*models.GovPayment, error) {
 	var p models.GovPayment
 	var hist []byte
@@ -98,6 +136,42 @@ func (s *GovStore) ListVariations(ctx context.Context, contractID string) ([]mod
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, contract_id, number, title, amount, extension_days, description, reason, impact, status, stage, approvals, created_at, updated_at
 		FROM gov_variations WHERE contract_id = $1 ORDER BY created_at`, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.GovVariation{}
+	for rows.Next() {
+		v, err := scanVariation(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *v)
+	}
+	return out, rows.Err()
+}
+
+// ListAllVariations returns variations across all contracts, newest first, with
+// optional contract and status filters (the basis for the variations approval
+// queue). An empty filter matches everything.
+func (s *GovStore) ListAllVariations(ctx context.Context, contractID, status string) ([]models.GovVariation, error) {
+	q := `SELECT id, contract_id, number, title, amount, extension_days, description, reason, impact, status, stage, approvals, created_at, updated_at
+		FROM gov_variations`
+	args := []any{}
+	conds := []string{}
+	if contractID != "" {
+		args = append(args, contractID)
+		conds = append(conds, "contract_id = $"+strconv.Itoa(len(args)))
+	}
+	if status != "" {
+		args = append(args, status)
+		conds = append(conds, "status = $"+strconv.Itoa(len(args)))
+	}
+	if len(conds) > 0 {
+		q += " WHERE " + strings.Join(conds, " AND ")
+	}
+	q += " ORDER BY created_at DESC"
+	rows, err := s.pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

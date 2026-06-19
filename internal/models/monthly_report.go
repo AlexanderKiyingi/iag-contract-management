@@ -101,6 +101,61 @@ type ValuationInput struct {
 	VerifiedDate             string `json:"verifiedDate"`
 }
 
+// ----- Challenges register (report-level, period-scoped) -----
+
+// Challenge is a cross-cutting issue from the monthly report: an issue category,
+// who it affects, the recommended action, and the owner. Not tied to a single
+// contract, so it is period-scoped rather than contract-scoped.
+type Challenge struct {
+	ID          string    `json:"id"`
+	Period      string    `json:"period"`
+	Seq         int       `json:"seq"`
+	Category    string    `json:"category"`
+	Description string    `json:"description"`
+	Affected    string    `json:"affected,omitempty"`
+	Priority    string    `json:"priority"`
+	Action      string    `json:"action,omitempty"`
+	Owner       string    `json:"owner,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type ChallengeInput struct {
+	Period      string `json:"period"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Affected    string `json:"affected"`
+	Priority    string `json:"priority"`
+	Action      string `json:"action"`
+	Owner       string `json:"owner"`
+}
+
+// ----- Action-item tracker (report-level, period-scoped) -----
+
+// ActionItem is a follow-up from the monthly report: a prioritized task with a
+// responsible party, target date, and status.
+type ActionItem struct {
+	ID        string    `json:"id"`
+	Period    string    `json:"period"`
+	Seq       int       `json:"seq"`
+	Priority  string    `json:"priority"`
+	Text      string    `json:"text"`
+	Party     string    `json:"party,omitempty"`
+	Target    string    `json:"target,omitempty"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ActionItemInput struct {
+	Period   string `json:"period"`
+	Priority string `json:"priority"`
+	Text     string `json:"text"`
+	Party    string `json:"party"`
+	Target   string `json:"target"`
+	Status   string `json:"status"`
+}
+
 // ----- Executive summary rollup (computed, not stored) -----
 
 type ContractorSummary struct {

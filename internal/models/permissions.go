@@ -83,6 +83,8 @@ var (
 		{ID: "contractors", Label: "Contractors"},
 		{ID: "progressreports", Label: "Progress reports"},
 		{ID: "valuations", Label: "Valuations"},
+		{ID: "challenges", Label: "Challenges register"},
+		{ID: "actionitems", Label: "Action items"},
 	}
 	crudActions = []CrudAction{
 		{Key: "create", Label: "Create"},
@@ -125,6 +127,8 @@ var (
 		"contractors.manage":     {"contractors.create", "contractors.read", "contractors.update", "contractors.delete"},
 		"progressreports.manage": {"progressreports.create", "progressreports.read", "progressreports.update", "progressreports.delete"},
 		"valuations.manage":      {"valuations.create", "valuations.read", "valuations.update", "valuations.delete"},
+		"challenges.manage":      {"challenges.create", "challenges.read", "challenges.update", "challenges.delete"},
+		"actionitems.manage":     {"actionitems.create", "actionitems.read", "actionitems.update", "actionitems.delete"},
 	}
 )
 
@@ -334,6 +338,8 @@ func permissionsForRole(role string) []string {
 		add("contractors", "create", "read", "update", "delete")
 		add("progressreports", "create", "read", "update", "delete")
 		add("valuations", "create", "read", "update")
+		add("challenges", "create", "read", "update", "delete")
+		add("actionitems", "create", "read", "update", "delete")
 		return out
 	case "contractor":
 		return []string{"contracts.read", "milestones.read", "obligations.read"}

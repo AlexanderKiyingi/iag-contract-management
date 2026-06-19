@@ -273,3 +273,170 @@ func scanValuation(row pgx.Row) (*models.Valuation, error) {
 	}
 	return &v, nil
 }
+
+// ---------------- Challenges ----------------
+
+const challengeCols = `id, period, seq, category, description, affected, priority, action, owner,
+	created_at, updated_at`
+
+// ListChallenges returns the challenges register, optionally filtered to a
+// single period, ordered by sequence.
+func (s *GovStore) ListChallenges(ctx context.Context, period string) ([]models.Challenge, error) {
+	q := `SELECT ` + challengeCols + ` FROM gov_challenges`
+	args := []any{}
+	if period != "" {
+		q += ` WHERE period=$1`
+		args = append(args, period)
+	}
+	q += ` ORDER BY period, seq`
+	rows, err := s.pool.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.Challenge{}
+	for rows.Next() {
+		c, err := scanChallenge(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *c)
+	}
+	return out, rows.Err()
+}
+
+func (s *GovStore) GetChallenge(ctx context.Context, id string) (*models.Challenge, error) {
+	row := s.pool.QueryRow(ctx, `SELECT `+challengeCols+` FROM gov_challenges WHERE id=$1`, id)
+	c, err := scanChallenge(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return c, err
+}
+
+// CreateChallenge appends a challenge to a period, assigning the next sequence
+// number for that period so (period, seq) stays unique.
+func (s *GovStore) CreateChallenge(ctx context.Context, c models.Challenge) (*models.Challenge, error) {
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO gov_challenges (id, period, seq, category, description, affected, priority, action, owner)
+		VALUES ($1,$2,(SELECT COALESCE(MAX(seq),0)+1 FROM gov_challenges WHERE period=$2),$3,$4,$5,$6,$7,$8)
+		RETURNING `+challengeCols,
+		c.ID, c.Period, c.Category, c.Description, c.Affected, c.Priority, c.Action, c.Owner)
+	return scanChallenge(row)
+}
+
+func (s *GovStore) UpdateChallenge(ctx context.Context, c models.Challenge) (*models.Challenge, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE gov_challenges SET
+			category=$2, description=$3, affected=$4, priority=$5, action=$6, owner=$7, updated_at=NOW()
+		WHERE id=$1 RETURNING `+challengeCols,
+		c.ID, c.Category, c.Description, c.Affected, c.Priority, c.Action, c.Owner)
+	cc, err := scanChallenge(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return cc, err
+}
+
+func (s *GovStore) DeleteChallenge(ctx context.Context, id string) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM gov_challenges WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrGovNotFound
+	}
+	return nil
+}
+
+func scanChallenge(row pgx.Row) (*models.Challenge, error) {
+	var c models.Challenge
+	if err := row.Scan(&c.ID, &c.Period, &c.Seq, &c.Category, &c.Description, &c.Affected,
+		&c.Priority, &c.Action, &c.Owner, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+// ---------------- Action items ----------------
+
+const actionItemCols = `id, period, seq, priority, text, party, target, status, created_at, updated_at`
+
+// ListActionItems returns the action-item tracker, optionally filtered to a
+// single period, ordered by sequence.
+func (s *GovStore) ListActionItems(ctx context.Context, period string) ([]models.ActionItem, error) {
+	q := `SELECT ` + actionItemCols + ` FROM gov_action_items`
+	args := []any{}
+	if period != "" {
+		q += ` WHERE period=$1`
+		args = append(args, period)
+	}
+	q += ` ORDER BY period, seq`
+	rows, err := s.pool.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.ActionItem{}
+	for rows.Next() {
+		a, err := scanActionItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *a)
+	}
+	return out, rows.Err()
+}
+
+func (s *GovStore) GetActionItem(ctx context.Context, id string) (*models.ActionItem, error) {
+	row := s.pool.QueryRow(ctx, `SELECT `+actionItemCols+` FROM gov_action_items WHERE id=$1`, id)
+	a, err := scanActionItem(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return a, err
+}
+
+// CreateActionItem appends an action item to a period, assigning the next
+// sequence number for that period so (period, seq) stays unique.
+func (s *GovStore) CreateActionItem(ctx context.Context, a models.ActionItem) (*models.ActionItem, error) {
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO gov_action_items (id, period, seq, priority, text, party, target, status)
+		VALUES ($1,$2,(SELECT COALESCE(MAX(seq),0)+1 FROM gov_action_items WHERE period=$2),$3,$4,$5,$6,$7)
+		RETURNING `+actionItemCols,
+		a.ID, a.Period, a.Priority, a.Text, a.Party, a.Target, a.Status)
+	return scanActionItem(row)
+}
+
+func (s *GovStore) UpdateActionItem(ctx context.Context, a models.ActionItem) (*models.ActionItem, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE gov_action_items SET
+			priority=$2, text=$3, party=$4, target=$5, status=$6, updated_at=NOW()
+		WHERE id=$1 RETURNING `+actionItemCols,
+		a.ID, a.Priority, a.Text, a.Party, a.Target, a.Status)
+	aa, err := scanActionItem(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return aa, err
+}
+
+func (s *GovStore) DeleteActionItem(ctx context.Context, id string) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM gov_action_items WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrGovNotFound
+	}
+	return nil
+}
+
+func scanActionItem(row pgx.Row) (*models.ActionItem, error) {
+	var a models.ActionItem
+	if err := row.Scan(&a.ID, &a.Period, &a.Seq, &a.Priority, &a.Text, &a.Party,
+		&a.Target, &a.Status, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
