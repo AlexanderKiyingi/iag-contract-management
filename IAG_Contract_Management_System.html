@@ -1,0 +1,2015 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAG | Contract Governance System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#16306E; --navy-deep:#0E1F4A; --saffron:#F59E0B; --saffron-deep:#B45309;
+  --bg:#f6f5f1; --surface:rgba(255,255,255,0.86); --glass:rgba(255,255,255,0.66);
+  --glass-border:rgba(255,255,255,0.9); --glass-shadow:0 2px 24px rgba(14,31,74,0.08);
+  --text:#16181d; --text-2:#6b6f78; --line:#e7e5de;
+  --green:#166534; --green-bg:#DCFCE7; --amber:#92400E; --amber-bg:#FEF3C7;
+  --red:#991B1B; --red-bg:#FEE2E2; --blue:#1e40af; --blue-bg:#DBEAFE;
+  --violet:#6d28d9; --violet-bg:#EDE9FE; --slate:#475569; --slate-bg:#E2E8F0;
+  --sidebar-w:228px; --topbar-h:56px;
+  --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace; --serif:'Fraunces',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;overflow:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;
+  background:
+   radial-gradient(900px 500px at 85% -10%, rgba(245,158,11,0.13), transparent 60%),
+   radial-gradient(800px 600px at -10% 110%, rgba(22,48,110,0.12), transparent 55%),
+   var(--bg);}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
+
+/* ---------- TOPBAR ---------- */
+.topbar{height:var(--topbar-h);display:flex;align-items:center;gap:18px;padding:0 18px;
+  background:rgba(255,255,255,0.78);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+  position:fixed;top:0;left:0;right:0;z-index:60}
+.brand{display:flex;align-items:center;gap:10px;min-width:var(--sidebar-w)}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-deep) 70%);
+  display:flex;align-items:center;justify-content:center;color:var(--saffron);font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:.02em;box-shadow:0 4px 14px rgba(14,31,74,.25)}
+.brand-text{line-height:1.05}
+.brand-text b{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--navy-deep);display:block}
+.brand-text span{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text-2);text-transform:uppercase}
+.topbar-title{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);flex:1}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.role-switch{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:99px;padding:5px 6px 5px 12px;box-shadow:var(--glass-shadow)}
+.role-switch label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2)}
+.role-switch select{border:none;background:var(--navy);color:#fff;font-family:var(--font);font-weight:600;font-size:12px;
+  padding:5px 10px;border-radius:99px;cursor:pointer;outline:none}
+.bell{position:relative;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.15s}
+.bell:hover{border-color:var(--navy)}
+.bell .badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:99px;background:var(--saffron);
+  color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
+.user-chip{display:flex;align-items:center;gap:8px}
+.avatar{width:32px;height:32px;border-radius:99px;background:linear-gradient(135deg,var(--saffron),var(--saffron-deep));
+  color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.user-chip .nm{font-weight:600;font-size:12.5px;line-height:1.1}
+.user-chip .rl{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-2)}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);padding:16px 12px;
+  background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border-right:1px solid var(--line);z-index:50;
+  display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.side-label{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-2);margin:12px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;
+  font-weight:500;font-size:13px;color:var(--text);position:relative;transition:.15s;border:1px solid transparent;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.8)}
+.nav-item.active{background:#fff;border-color:var(--glass-border);box-shadow:var(--glass-shadow);font-weight:600;color:var(--navy-deep)}
+.nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--saffron)}
+.nav-item .ic{width:18px;text-align:center;font-size:14px}
+.nav-item .cnt{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--slate-bg);color:var(--slate);
+  border-radius:99px;padding:1px 7px}
+.side-foot{margin-top:auto;padding:12px 10px;border-top:1px dashed var(--line)}
+.side-foot .sf1{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.side-foot .sf2{font-size:11px;color:var(--text-2);margin-top:3px}
+.reset-link{font-size:11px;color:var(--red);cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block}
+
+/* ---------- MAIN ---------- */
+.main{position:fixed;top:var(--topbar-h);left:var(--sidebar-w);right:0;bottom:0;overflow-y:auto;padding:22px 26px 60px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.page-title{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--navy-deep);letter-spacing:-.01em}
+.page-sub{font-size:12.5px;color:var(--text-2);margin-top:3px}
+.crumb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px}
+.crumb a{color:var(--navy);cursor:pointer;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+
+/* ---------- BUTTONS ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:10px;padding:9px 16px;font-family:var(--font);
+  font-weight:600;font-size:12.5px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 4px 14px rgba(22,48,110,.28)}
+.btn-primary:hover{background:var(--navy-deep);transform:translateY(-1px)}
+.btn-saffron{background:var(--saffron);color:#fff;box-shadow:0 4px 14px rgba(245,158,11,.3)}
+.btn-saffron:hover{background:var(--saffron-deep)}
+.btn-ghost{background:var(--surface);border:1px solid var(--line);color:var(--text)}
+.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.btn-danger{background:var(--red-bg);color:var(--red)}
+.btn-green{background:var(--green);color:#fff}
+.btn-sm{padding:6px 11px;font-size:11.5px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+/* ---------- KPI ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--glass-border);border-radius:14px;
+  padding:16px 16px 14px;box-shadow:var(--glass-shadow);border-top:3px solid var(--navy);position:relative;overflow:hidden}
+.kpi.k-saffron{border-top-color:var(--saffron)}
+.kpi.k-green{border-top-color:#059669}
+.kpi.k-red{border-top-color:#DC2626}
+.kpi.k-violet{border-top-color:#7C3AED}
+.kpi-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2)}
+.kpi-value{font-family:var(--mono);font-size:27px;font-weight:500;margin-top:7px;color:var(--navy-deep);letter-spacing:-.02em}
+.kpi-trend{font-size:11px;margin-top:5px;color:var(--text-2)}
+.kpi-trend b.up{color:#059669}.kpi-trend b.down{color:#DC2626}.kpi-trend b.warn{color:var(--saffron-deep)}
+
+/* ---------- CARDS / PANELS ---------- */
+.panel{background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--glass-border);border-radius:14px;
+  box-shadow:var(--glass-shadow);overflow:hidden;margin-bottom:18px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--navy-deep)}
+.panel-body{padding:18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ---------- TABLES ---------- */
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);
+  text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.5)}
+td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+tr.row-click{cursor:pointer;transition:.12s}
+tr.row-click:hover{background:rgba(245,158,11,.06)}
+td .mono,.mono{font-family:var(--mono);font-size:12px}
+td .b{font-weight:600}
+.td-sub{font-size:11px;color:var(--text-2);margin-top:2px}
+
+/* ---------- PILLS ---------- */
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:3px 10px;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:99px;background:currentColor}
+.p-green{background:var(--green-bg);color:var(--green)}
+.p-amber{background:var(--amber-bg);color:var(--amber)}
+.p-red{background:var(--red-bg);color:var(--red)}
+.p-blue{background:var(--blue-bg);color:var(--blue)}
+.p-violet{background:var(--violet-bg);color:var(--violet)}
+.p-slate{background:var(--slate-bg);color:var(--slate)}
+.p-navy{background:#E0E7FF;color:var(--navy)}
+
+/* ---------- PROGRESS ---------- */
+.prog{height:7px;border-radius:99px;background:#e9e7e0;overflow:hidden;min-width:90px}
+.prog>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--navy),var(--saffron));transition:width .4s}
+.prog-wrap{display:flex;align-items:center;gap:9px}
+.prog-pct{font-family:var(--mono);font-size:11px;color:var(--text-2);min-width:34px;text-align:right}
+
+/* ---------- TABS ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.tab{padding:10px 16px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;border-bottom:2.5px solid transparent;
+  white-space:nowrap;transition:.15s;user-select:none}
+.tab:hover{color:var(--navy)}
+.tab.active{color:var(--navy-deep);border-bottom-color:var(--saffron)}
+.tab .cnt{font-family:var(--mono);font-size:9.5px;background:var(--slate-bg);color:var(--slate);border-radius:99px;padding:1px 6px;margin-left:5px}
+
+/* ---------- INFO GRID ---------- */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.info-item{padding:12px 14px;background:rgba(255,255,255,.6);border:1px solid var(--line);border-radius:11px}
+.info-item .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.info-item .v{font-size:13.5px;font-weight:600;margin-top:5px;color:var(--text)}
+.info-item .v.big{font-family:var(--mono);font-size:17px;color:var(--navy-deep)}
+
+/* ---------- HERO STRIP (contract banner) ---------- */
+.hero{background:linear-gradient(120deg,var(--navy-deep) 0%,var(--navy) 60%,#26468f 100%);color:#fff;border-radius:16px;
+  padding:22px 24px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 12px 34px rgba(14,31,74,.3)}
+.hero::after{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.35),transparent 65%)}
+.hero h2{font-family:var(--serif);font-size:23px;font-weight:700;letter-spacing:-.01em}
+.hero .h-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin-bottom:6px}
+.hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:18px;position:relative;z-index:1}
+.hstat .hk{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.hstat .hv{font-family:var(--mono);font-size:18px;margin-top:4px;color:#fff}
+.hstat .hv.sf{color:var(--saffron)}
+
+/* ---------- MILESTONE TIMELINE ---------- */
+.ms-card{display:grid;grid-template-columns:44px 1fr auto auto auto;gap:14px;align-items:center;padding:15px 18px;
+  border-bottom:1px solid var(--line);cursor:pointer;transition:.13s}
+.ms-card:hover{background:rgba(245,158,11,.05)}
+.ms-num{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:13px;background:var(--slate-bg);color:var(--slate)}
+.ms-num.done{background:var(--green-bg);color:var(--green)}
+.ms-num.active{background:var(--navy);color:var(--saffron)}
+.ms-name{font-weight:600;font-size:14px}
+.ms-meta{font-size:11.5px;color:var(--text-2);margin-top:3px;font-family:var(--mono)}
+.ms-amt{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--navy-deep);text-align:right}
+
+/* ---------- CHECKLIST ---------- */
+.chk{display:flex;align-items:center;gap:11px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;
+  margin-bottom:8px;background:rgba(255,255,255,.6);cursor:pointer;transition:.13s;user-select:none}
+.chk:hover{border-color:var(--saffron)}
+.chk.done{background:var(--green-bg);border-color:#bbe7c8}
+.chk.locked{cursor:not-allowed;opacity:.7}
+.chk-box{width:20px;height:20px;border-radius:6px;border:2px solid #c9c7bf;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:#fff;flex-shrink:0;transition:.13s}
+.chk.done .chk-box{background:var(--green);border-color:var(--green)}
+.chk-label{font-size:13px;font-weight:500;flex:1}
+.chk.done .chk-label{color:var(--green)}
+.chk-by{font-family:var(--mono);font-size:10px;color:var(--text-2)}
+
+/* ---------- DOCS ---------- */
+.doc-row{display:flex;align-items:center;gap:13px;padding:11px 14px;border:1px solid var(--line);border-radius:11px;
+  margin-bottom:9px;background:rgba(255,255,255,.65)}
+.doc-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  background:var(--blue-bg)}
+.doc-ic.pdf{background:var(--red-bg)}.doc-ic.img{background:var(--green-bg)}.doc-ic.zip{background:var(--amber-bg)}.doc-ic.vid{background:var(--violet-bg)}
+.doc-name{font-weight:600;font-size:13px}
+.doc-meta{font-family:var(--mono);font-size:10.5px;color:var(--text-2);margin-top:2px}
+.doc-actions{margin-left:auto;display:flex;gap:6px;align-items:center}
+.doc-ver{font-family:var(--mono);font-size:10px;background:var(--slate-bg);color:var(--slate);border-radius:6px;padding:2px 7px}
+
+/* ---------- COMMENTS ---------- */
+.cm{display:flex;gap:11px;margin-bottom:14px}
+.cm-av{width:32px;height:32px;border-radius:99px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff}
+.cm-bubble{background:rgba(255,255,255,.75);border:1px solid var(--line);border-radius:4px 13px 13px 13px;padding:10px 14px;max-width:560px}
+.cm-head{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+.cm-name{font-weight:700;font-size:12px}
+.cm-role{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2)}
+.cm-time{font-family:var(--mono);font-size:9.5px;color:var(--text-2);margin-left:auto}
+.cm-text{font-size:13px;line-height:1.45}
+.cm-input{display:flex;gap:9px;margin-top:14px}
+.cm-input input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-family:var(--font);font-size:13px;
+  background:#fff;outline:none}
+.cm-input input:focus{border-color:var(--navy)}
+
+/* ---------- FORMS ---------- */
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.f-grid .full{grid-column:1/-1}
+.f-field label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);margin-bottom:5px}
+.f-field input,.f-field select,.f-field textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-family:var(--font);font-size:13px;background:#fff;outline:none;transition:.13s}
+.f-field input:focus,.f-field select:focus,.f-field textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(22,48,110,.08)}
+.f-field textarea{resize:vertical;min-height:74px}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(14,31,74,.45);backdrop-filter:blur(4px);z-index:100;
+  display:none;align-items:flex-start;justify-content:center;padding:46px 18px;overflow-y:auto}
+.modal-overlay.open{display:flex;animation:fadeIn .18s}
+.modal{background:#fdfdfb;border-radius:18px;width:100%;max-width:680px;box-shadow:0 30px 80px rgba(14,31,74,.35);
+  animation:slideUp .22s;overflow:hidden}
+.modal.wide{max-width:880px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);
+  background:linear-gradient(120deg,rgba(22,48,110,.04),rgba(245,158,11,.05))}
+.modal-title{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--navy-deep)}
+.modal-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center}
+.modal-x:hover{border-color:var(--red);color:var(--red)}
+.modal-body{padding:22px;max-height:calc(100vh - 220px);overflow-y:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line);background:rgba(255,255,255,.7)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- DRAWER (notifications) ---------- */
+.drawer{position:fixed;top:var(--topbar-h);right:-400px;width:380px;bottom:0;background:#fdfdfb;border-left:1px solid var(--line);
+  box-shadow:-18px 0 50px rgba(14,31,74,.14);z-index:90;transition:right .25s;display:flex;flex-direction:column}
+.drawer.open{right:0}
+.drawer-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.drawer-body{flex:1;overflow-y:auto;padding:14px 16px}
+.notif{display:flex;gap:11px;padding:12px 13px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;background:#fff}
+.notif.unread{border-left:3px solid var(--saffron);background:rgba(245,158,11,.05)}
+.notif .nt{font-size:12.5px;line-height:1.4}
+.notif .nd{font-family:var(--mono);font-size:9.5px;color:var(--text-2);margin-top:4px}
+.notif-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:var(--blue-bg)}
+
+/* ---------- WORKFLOW STEPPER ---------- */
+.stepper{display:flex;align-items:flex-start;gap:0;margin:10px 0 4px}
+.step{flex:1;text-align:center;position:relative}
+.step::before{content:"";position:absolute;top:13px;left:-50%;width:100%;height:2.5px;background:#e2e0d8;z-index:0}
+.step:first-child::before{display:none}
+.step.done::before{background:var(--green)}
+.step.curr::before{background:var(--saffron)}
+.step-dot{width:27px;height:27px;border-radius:99px;background:#fff;border:2.5px solid #d7d5cd;display:flex;align-items:center;
+  justify-content:center;margin:0 auto 7px;font-size:11px;font-weight:700;color:var(--text-2);position:relative;z-index:1}
+.step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step.curr .step-dot{border-color:var(--saffron);color:var(--saffron-deep);box-shadow:0 0 0 4px rgba(245,158,11,.18)}
+.step-lbl{font-size:10.5px;font-weight:600;color:var(--text-2);line-height:1.2;padding:0 4px}
+.step.done .step-lbl,.step.curr .step-lbl{color:var(--text)}
+
+/* ---------- REPORT DOC ---------- */
+.report-doc{background:#fff;border:1px solid var(--line);border-radius:4px;padding:38px 44px;font-size:13px;line-height:1.55;
+  box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.rd-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid var(--navy);padding-bottom:16px;margin-bottom:20px}
+.rd-org{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--navy-deep)}
+.rd-org-sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);margin-top:3px}
+.rd-no{font-family:var(--mono);font-size:11px;text-align:right;color:var(--text-2)}
+.rd-title{font-family:var(--serif);font-size:21px;font-weight:700;text-align:center;margin:8px 0 22px;color:var(--navy-deep)}
+.rd-sec{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--saffron-deep);
+  border-bottom:1px solid var(--line);padding-bottom:5px;margin:20px 0 10px;font-weight:500}
+.rd-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 28px}
+.rd-grid .ri{display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px dotted #e6e4dc}
+.rd-grid .ri .k{color:var(--text-2);font-size:12px}
+.rd-grid .ri .v{font-weight:600;font-size:12.5px;text-align:right}
+.rd-sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:34px}
+.rd-sign .sg{border-top:1.5px solid var(--text);padding-top:7px}
+.rd-sign .sg .sn{font-weight:700;font-size:12px}
+.rd-sign .sg .sr{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-top:2px}
+.rd-stamp{display:inline-block;border:2.5px solid var(--green);color:var(--green);font-family:var(--mono);font-weight:700;
+  font-size:13px;letter-spacing:.18em;text-transform:uppercase;padding:7px 16px;border-radius:6px;transform:rotate(-4deg);opacity:.85}
+
+/* ---------- MISC ---------- */
+.empty{text-align:center;padding:44px 20px;color:var(--text-2)}
+.empty .e-ic{font-size:34px;margin-bottom:10px;opacity:.5}
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.bar-lbl{width:170px;font-size:12px;font-weight:500;flex-shrink:0}
+.bar-track{flex:1;height:18px;background:#ece9e1;border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--navy),#3b5bb5);display:flex;align-items:center;
+  justify-content:flex-end;padding-right:7px;color:#fff;font-family:var(--mono);font-size:9.5px;min-width:fit-content;transition:width .5s}
+.bar-fill.sf{background:linear-gradient(90deg,var(--saffron-deep),var(--saffron))}
+.bar-val{width:90px;font-family:var(--mono);font-size:11px;color:var(--text-2);text-align:right;flex-shrink:0}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy-deep);color:#fff;
+  padding:12px 22px;border-radius:12px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:.3s;box-shadow:0 14px 40px rgba(14,31,74,.4);
+  display:flex;align-items:center;gap:9px;max-width:520px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast .t-ic{color:var(--saffron)}
+.lock-note{display:flex;gap:9px;align-items:flex-start;background:var(--amber-bg);border:1px solid #f3dcae;color:var(--amber);
+  border-radius:11px;padding:11px 14px;font-size:12.5px;margin-bottom:14px;line-height:1.45}
+.ok-note{background:var(--green-bg);border-color:#bfe8cc;color:var(--green)}
+.scope-task{display:grid;grid-template-columns:30px 1fr 120px 110px;gap:12px;align-items:center;padding:10px 13px;
+  border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,.6)}
+.scope-num{font-family:var(--mono);font-size:11px;color:var(--text-2)}
+.scope-name{font-weight:600;font-size:13px}
+.scope-desc{font-size:11.5px;color:var(--text-2);margin-top:2px}
+.var-impact{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;text-align:center;
+  background:rgba(255,255,255,.6);border:1px solid var(--line);border-radius:12px;padding:16px}
+.vi-k{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-2)}
+.vi-v{font-family:var(--mono);font-size:16px;font-weight:500;margin-top:5px;color:var(--navy-deep)}
+.vi-arrow{font-size:18px;color:var(--saffron)}
+.search-input{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-family:var(--font);font-size:13px;
+  background:#fff;outline:none;width:240px}
+.search-input:focus{border-color:var(--navy)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#d4d1c8;border-radius:99px}
+::-webkit-scrollbar-track{background:transparent}
+
+@media print{
+  .topbar,.sidebar,.modal-foot,.modal-x,.drawer,.no-print{display:none!important}
+  .main{position:static;padding:0}
+  .modal-overlay.open{position:static;padding:0;background:#fff}
+  .modal{box-shadow:none;max-width:100%}
+  .modal-body{max-height:none}
+  body{overflow:visible;background:#fff}
+  body::before,body::after{display:none}
+}
+@media(max-width:900px){
+  :root{--sidebar-w:64px}
+  .nav-item span.lbl,.side-label,.side-foot,.brand-text,.nav-item .cnt{display:none}
+  .nav-item{justify-content:center}
+  .topbar-title{display:none}
+}
+
+/* ---------- ENTERPRISE UI CLEANUP ---------- */
+:root{
+  --navy:#17345f; --navy-deep:#10233f; --saffron:#c98512; --saffron-deep:#8f5c0b;
+  --bg:#f4f6f8; --surface:#ffffff; --glass:#ffffff; --glass-border:#dfe5ec; --glass-shadow:0 1px 3px rgba(15,23,42,.08);
+  --text:#172033; --text-2:#657184; --line:#dfe5ec; --sidebar-w:248px; --topbar-h:58px;
+  --green:#166534; --green-bg:#e8f5ee; --amber:#8a5a00; --amber-bg:#fff4d8; --red:#991b1b; --red-bg:#fde8e8;
+  --blue:#1d4f91; --blue-bg:#e8f0fb; --violet:#5b3c9d; --violet-bg:#f0ebfb; --slate:#526173; --slate-bg:#edf1f5;
+}
+body{background:var(--bg);font-size:13px;letter-spacing:0;}
+body::before,body::after,.hero::after{display:none;}
+.topbar{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.04);padding:0 22px;}
+.brand-mark{border-radius:6px;box-shadow:none;background:var(--navy-deep);color:#fff;}
+.brand-text b{font-family:var(--font);font-size:14px;}
+.brand-text span,.topbar-title,.side-label,.kpi-label,.crumb,.panel-title,.f-field label{letter-spacing:.08em;}
+.topbar-title{font-size:10px;}
+.role-switch,.bell{box-shadow:none;background:#fff;border-color:var(--line);}
+.role-switch select{border-radius:6px;background:var(--navy-deep);}
+.sidebar{background:#fff;border-right:1px solid var(--line);padding:14px 10px;gap:2px;}
+.side-label{font-size:9px;margin:14px 10px 7px;color:#7a8595;}
+.nav-item{border-radius:6px;padding:8px 10px;font-size:12.5px;gap:9px;}
+.nav-item:hover{background:#f6f8fb;}
+.nav-item.active{box-shadow:none;background:#eef4fb;border-color:#d7e3f1;color:var(--navy-deep);}
+.nav-item.active::before{top:7px;bottom:7px;background:var(--navy);}
+.nav-item .ic{width:24px;height:22px;border-radius:5px;background:#edf1f5;color:#526173;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);}
+.nav-item.active .ic{background:var(--navy);color:#fff;}
+.nav-item .cnt{border-radius:6px;padding:1px 6px;background:#f1f5f9;}
+.main{padding:22px 28px 54px;}
+.page-head{align-items:flex-start;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:14px;}
+.page-title{font-family:var(--font);font-size:22px;letter-spacing:0;}
+.page-sub{font-size:12px;max-width:760px;line-height:1.45;}
+.btn{border-radius:6px;padding:8px 13px;font-size:12px;box-shadow:none!important;}
+.btn:hover{transform:none;}
+.btn-sm{padding:5px 9px;border-radius:6px;font-size:11px;}
+.kpi-row{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+.kpi{border-radius:8px;padding:13px 14px;border:1px solid var(--line);border-left:4px solid var(--navy);border-top:none;box-shadow:var(--glass-shadow);}
+.kpi-value{font-size:22px;margin-top:5px;}
+.kpi-trend{font-size:11px;}
+.panel{border-radius:8px;border-color:var(--line);box-shadow:var(--glass-shadow);margin-bottom:14px;background:#fff;}
+.panel-head{padding:12px 14px;background:#fbfcfd;}
+.panel-title{font-size:11px;color:#31425a;}
+.panel-body{padding:14px;}
+.grid-2,.grid-3{gap:14px;}
+th{font-size:9px;padding:9px 12px;background:#f8fafc;color:#667085;}
+td{padding:10px 12px;font-size:12.5px;}
+td .b,.b{font-weight:650;}
+.td-sub{font-size:11px;line-height:1.35;}
+.table-wrap{overflow-x:auto;}
+.pill{border-radius:6px;padding:3px 8px;font-size:9.5px;letter-spacing:.03em;}
+.pill::before{display:none;}
+.prog{height:6px;min-width:76px;background:#e9edf2;}
+.prog>i{background:var(--navy);}
+.doc-row{border-radius:8px;padding:10px 12px;background:#fff;margin-bottom:8px;align-items:flex-start;}
+.doc-ic{width:32px;height:32px;border-radius:6px;font-size:10px;font-family:var(--mono);font-weight:700;color:var(--navy);}
+.doc-name{font-size:12.5px;line-height:1.3;}
+.doc-meta{font-size:10px;line-height:1.35;}
+.info-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.info-item{border-radius:8px;background:#fff;padding:11px 12px;}
+.hero{border-radius:8px;box-shadow:none;background:var(--navy-deep);padding:18px 20px;}
+.hero h2{font-family:var(--font);font-size:21px;}
+.hero-stats{gap:10px;}
+.ms-card{grid-template-columns:38px 1fr auto auto auto;padding:12px 14px;}
+.ms-num{width:30px;height:30px;border-radius:6px;}
+.f-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.f-field input,.f-field select,.f-field textarea,.search-input,.cm-input input{border-radius:6px;padding:9px 11px;font-size:12.5px;}
+.modal{border-radius:8px;max-width:720px;}
+.modal.wide{max-width:920px;}
+.modal-head{padding:14px 18px;background:#fff;}
+.modal-title{font-family:var(--font);font-size:16px;}
+.modal-body{padding:18px;}
+.modal-foot{padding:13px 18px;background:#fbfcfd;}
+.drawer{background:#fff;}
+.notif{border-radius:8px;}
+.bar-lbl{width:210px;}
+.toast{border-radius:8px;}
+.gov-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px;}
+.gov-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:13px 14px;box-shadow:var(--glass-shadow);}
+.gov-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.gov-card-title{font-weight:700;font-size:13px;color:var(--navy-deep);line-height:1.3;}
+.gov-card-meta{font-family:var(--mono);font-size:10px;color:var(--text-2);line-height:1.4;}
+.gov-card-copy{font-size:12px;line-height:1.45;color:var(--text-2);margin-top:7px;}
+.gov-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+.gov-table td:nth-child(n+5),.gov-table th:nth-child(n+5){white-space:nowrap;}
+@media(max-width:900px){:root{--sidebar-w:68px}.main{padding:18px 16px 50px}.topbar{padding:0 12px}.f-grid{grid-template-columns:1fr}.bar-lbl{width:130px}.user-chip .nm,.user-chip .rl{display:none}}
+</style>
+</head>
+<body>
+<!-- ============ TOPBAR ============ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">IA</div>
+    <div class="brand-text"><b>Inspire Africa Group</b><span>Africa Coffee Park | Ntungamo</span></div>
+  </div>
+  <div class="topbar-title">Contract Governance System</div>
+  <div class="topbar-right">
+    <div class="role-switch">
+      <label>Login as</label>
+      <select id="roleSelect" onchange="App.switchRole(this.value)"></select>
+    </div>
+    <div class="bell" onclick="App.toggleDrawer()" title="Notifications">N<span class="badge" id="notifBadge" style="display:none">0</span></div>
+    <div class="user-chip">
+      <div class="avatar" id="userAvatar">-</div>
+      <div><div class="nm" id="userName">-</div><div class="rl" id="userRole">-</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SIDEBAR ============ -->
+<div class="sidebar">
+  <div class="side-label">Workspace</div>
+  <div class="nav-item" data-view="dashboard" onclick="App.go('dashboard')"><span class="ic">DB</span><span class="lbl">Executive Dashboard</span></div>
+  <div class="nav-item" data-view="requests" onclick="App.go('requests')"><span class="ic">IN</span><span class="lbl">Requests</span><span class="cnt" id="cntRequests">0</span></div>
+  <div class="nav-item" data-view="contracts" onclick="App.go('contracts')"><span class="ic">CT</span><span class="lbl">Contracts</span><span class="cnt" id="cntContracts">0</span></div>
+  <div class="nav-item" data-view="approvals" onclick="App.go('approvals')"><span class="ic">AP</span><span class="lbl">Approvals</span><span class="cnt" id="cntApprovals">0</span></div>
+  <div class="nav-item" data-view="obligations" onclick="App.go('obligations')"><span class="ic">OB</span><span class="lbl">Obligations</span><span class="cnt" id="cntObligations">0</span></div>
+  <div class="nav-item" data-view="milestones" onclick="App.go('milestones')"><span class="ic">MS</span><span class="lbl">Milestones</span><span class="cnt" id="cntMilestones">0</span></div>
+  <div class="nav-item" data-view="payments" onclick="App.go('payments')"><span class="ic">PY</span><span class="lbl">Payments</span><span class="cnt" id="cntPayments">0</span></div>
+  <div class="nav-item" data-view="variations" onclick="App.go('variations')"><span class="ic">VR</span><span class="lbl">Variations</span><span class="cnt" id="cntVariations">0</span></div>
+  <div class="side-label">Governance</div>
+  <div class="nav-item" data-view="risk" onclick="App.go('risk')"><span class="ic">RK</span><span class="lbl">Risk</span></div>
+  <div class="nav-item" data-view="templates" onclick="App.go('templates')"><span class="ic">CL</span><span class="lbl">Templates &amp; Clauses</span></div>
+  <div class="nav-item" data-view="budgets" onclick="App.go('budgets')"><span class="ic">BG</span><span class="lbl">Budgets</span></div>
+  <div class="nav-item" data-view="closeout" onclick="App.go('closeout')"><span class="ic">CO</span><span class="lbl">Closeout</span></div>
+  <div class="side-label">Intelligence</div>
+  <div class="nav-item" data-view="reports" onclick="App.go('reports')"><span class="ic">RP</span><span class="lbl">Reports</span></div>  <div class="side-foot">
+    <div class="sf1">IAG | CMS Module</div>
+    <div class="sf2">Phase 1 Programme | v1.1<br>Backend-ready demo</div>
+    <span class="reset-link" onclick="App.resetData()">Reset demo data</span>
+  </div>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div class="main" id="main"></div>
+
+<!-- ============ NOTIFICATIONS DRAWER ============ -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="font-weight:700;font-family:var(--serif);font-size:16px;color:var(--navy-deep)">Notifications</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="App.markAllRead()">Mark all read</button>
+      <button class="modal-x" onclick="App.toggleDrawer()">âœ•</button>
+    </div>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)App.closeModal()">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"><span class="t-ic">OK</span><span id="toastMsg"></span></div>
+
+<script>
+/* =====================================================================
+   IAG | CONTRACT GOVERNANCE SYSTEM - single file
+   Storage adapter: localStorage by default; replace DataStore methods for API integration
+===================================================================== */
+const App = (() => {
+
+/* ---------------- DATA ACCESS BOUNDARY ----------------
+   Backend integration point:
+   - Keep view functions reading from S.
+   - Replace DataStore.load/save/syncAction with API calls when a backend is available.
+   - Suggested endpoints: GET /contracts/state, PUT /contracts/state, POST /workflow-events.
+*/
+const KEY = 'iag_cms_v3';
+const API_BASE = '';
+let memStore = null;
+const DataStore = {
+  mode: API_BASE ? 'api' : 'local',
+  load(){
+    try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e){}
+    return memStore;
+  },
+  save(state){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ memStore = state; }
+    this.syncAction('state.saved', { at: new Date().toISOString() });
+  },
+  syncAction(type, payload){
+    if(!API_BASE) return;
+    try { navigator.sendBeacon(API_BASE + '/workflow-events', JSON.stringify({ type, payload })); } catch(e){}
+  }
+};
+function load(){ return DataStore.load(); }
+function save(){ DataStore.save(S); }
+function recordEvent(type, payload){ DataStore.syncAction(type, payload); }
+
+/* ---------------- ROLES ---------------- */
+const USERS = {
+  contractor:  { name:'Kato Mubiru',        role:'contractor', label:'Contractor | ABC Construction', av:'KM', col:'#B45309' },
+  pm:          { name:'John Doe',           role:'pm',         label:'Project Manager',               av:'JD', col:'#16306E' },
+  finance:     { name:'Irene Tumusiime',    role:'finance',    label:'Finance Officer',               av:'IT', col:'#0D9488' },
+  management:  { name:'Nelson Tugume',      role:'management', label:'Management | CEO',              av:'NT', col:'#7C3AED' },
+  dept:        { name:'James Mukasa',       role:'dept',       label:'Department Head',               av:'JM', col:'#DC2626' },
+};
+const ROLE_NAMES = {contractor:'Contractor', pm:'Project Manager', finance:'Finance Officer', management:'Management', dept:'Department Head'};
+
+const PERMS = {
+  createContract:    ['pm','management'],
+  editContract:      ['pm','management'],
+  addMilestone:      ['pm'],
+  uploadDoc:         ['contractor','pm'],
+  tickChecklist:     ['contractor','pm'],
+  markScope:         ['contractor','pm'],
+  requestVerification:['contractor'],
+  inspect:           ['pm'],
+  approveMilestone:  ['pm'],
+  createVariation:   ['pm'],
+  approveVariation:  ['pm','dept','management'],
+  procApproveVariation:['pm','dept','management'],
+  pmApprovePayment:  ['pm'],
+  financeReview:     ['finance'],
+  authorizePayment:  ['management','finance'],
+  markPaid:          ['finance'],
+  comment:           ['contractor','pm','finance','management','dept'],
+};
+function can(action){ return (PERMS[action]||[]).includes(S.currentRole); }
+
+/* ---------------- HELPERS ---------------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid = p => p + '-' + Math.random().toString(36).slice(2,8).toUpperCase();
+function fmtUGX(n){
+  n = Number(n)||0;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return 'UGX ' + (n/1e9).toFixed(abs%1e9===0?0:2).replace(/\.00$/,'') + 'Bn';
+  if (abs >= 1e6) return 'UGX ' + (n/1e6).toFixed(abs%1e6===0?0:1).replace(/\.0$/,'') + 'M';
+  return 'UGX ' + n.toLocaleString();
+}
+function fmtFull(n){ return 'UGX ' + (Number(n)||0).toLocaleString(); }
+function fmtDate(d){
+  if(!d) return '-';
+  const dt = new Date(d); if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function today(){ return new Date().toISOString().slice(0,10); }
+function nowStr(){ return new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function addDays(d,n){ const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function docIcon(name){
+  const n = (name||'').toLowerCase();
+  if (n.endsWith('.pdf')) return ['pdf','ðŸ“„'];
+  if (/\.(png|jpe?g|webp)$/.test(n)) return ['img','ðŸ–¼'];
+  if (/\.(zip|rar|7z)$/.test(n)) return ['zip','ðŸ—œ'];
+  if (/\.(mp4|mov|avi)$/.test(n)) return ['vid','ðŸŽ¬'];
+  if (/\.(dwg|dxf)$/.test(n)) return ['','ðŸ“'];
+  return ['','ðŸ“Ž'];
+}
+const MS_STATUS_PILL = {
+  'Pending':'p-slate','In Progress':'p-blue','Verification Requested':'p-amber',
+  'Under Inspection':'p-violet','Approved':'p-green','Rejected':'p-red','Paid':'p-green','Completed':'p-green'
+};
+const CT_STATUS_PILL = {
+  'Draft':'p-slate','Under Review':'p-amber','Approved':'p-blue','Active':'p-green','Suspended':'p-red',
+  'Completed':'p-navy','Closed':'p-slate','Terminated':'p-red'
+};
+const PAY_STAGES = ['PM Approval','Finance Review','Payment Authorization','Paid'];
+const VAR_STAGES = ['Project Manager','Department Head','Procurement','Management'];
+function pill(status, map){ return '<span class="pill '+(map[status]||'p-slate')+'">'+esc(status)+'</span>'; }
+
+/* ---------------- SEED DATA ---------------- */
+function seed(){
+  const doc = (name, size, uploadedBy, date, version=1, cat='General') => ({id:uid('DOC'), name, size, uploadedBy, date, version, cat});
+  const comment = (author, role, text, date) => ({author, role, text, date});
+  const checkBy = (done, fallback='Kato Mubiru') => done ? fallback : null;
+  const checkDate = done => done ? '10 Jun 2026' : null;
+  const ml = (name, value, target, status, scope, deliv, chk, docs, comments) => ({
+    id: uid('MS'), name, value, targetDate: target, status,
+    scope: scope.map(t=>({task:t[0], desc:t[1], target:t[2], status:t[3]})),
+    deliverables: deliv.map(d=>({name:d[0], done:d[1]})),
+    checklist: chk.map(c=>({item:c[0], done:c[1], by:checkBy(c[1], c[2]), date:checkDate(c[1])})),
+    docs: docs.map(d=>doc(d[0], d[1], d[2], d[3], d[4]||1, d[5]||'Milestone Evidence')),
+    comments: comments.map(c=>comment(c[0], c[1], c[2], c[3])),
+    inspection:null, completionReport:null, payment:null
+  });
+  const isoDate = d => {
+    const months = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    const m = String(d).match(/^(\d{2}) (\w{3}) (\d{4})$/);
+    return m ? `${m[3]}-${months[m[2]] || '01'}-${m[1]}` : d;
+  };
+  const approve = (m, no, date, pm, dept, observations, issues='None') => {
+    m.inspection = {date:isoDate(date), inspector:pm, observations, issues, recommendation:'Approve'};
+    m.completionReport = {no, date, pm, dept};
+    if (m.status !== 'Paid') m.status = 'Approved';
+    return m;
+  };
+  const pay = (m, contractNo, idx, retention, status, stage, dates) => {
+    const payable = Math.round(m.value * (100 - retention) / 100);
+    const people = ['John Doe','Irene Tumusiime','Nelson Tugume','Irene Tumusiime'];
+    m.payment = {id:'PAY-'+contractNo+'-'+String(idx).padStart(2,'0'), amount:m.value, retention, payable, stage, status,
+      history:PAY_STAGES.map((step,i)=>({step, by:i<stage?people[i]:null, date:i<stage?dates[i]:null}))};
+    if (status === 'Paid') m.status = 'Paid';
+    return m;
+  };
+  const variation = (number, title, amount, days, status, stage, byDates) => ({
+    id:uid('VAR'), number, title, amount, extensionDays:days,
+    description:title+' required to keep the programme aligned with field conditions and operational readiness.',
+    reason:'Raised from site instruction, user department request, or technical review during implementation.',
+    impact:(amount>=0?'+':'')+fmtUGX(amount)+' contract value impact; '+(days?days+' calendar day extension.':'no time extension.'),
+    status, stage,
+    approvals:byDates.map(x=>({step:x[0], by:x[1], date:x[2]}))
+  });
+
+  const c1 = {
+    id:uid('CT'), number:'IAG/WRK/2026/014', name:'Coffee Park Access Road and Gatehouse Works',
+    contractor:'ABC Construction Ltd', contractorContact:'Kato Mubiru | +256 772 410 233 | kato@abcconstruction.ug',
+    type:'Works - Civil Engineering', startDate:'2026-02-01', endDate:'2026-12-30', location:'Africa Coffee Park, Ntungamo',
+    pm:'John Doe', department:'Infrastructure & Estates', value:850000000, retention:5, status:'Active',
+    documents:[doc('Signed Contract - IAG-WRK-2026-014.pdf','4.2 MB','John Doe','01 Feb 2026',1,'Signed Contract'),doc('Bill of Quantities - Access Road.pdf','1.8 MB','QS Office','01 Feb 2026',2,'BOQ'),doc('Engineering Drawings Rev C.pdf','22.6 MB','Design Office','03 Jun 2026',3,'Drawings'),doc('Insurance and Performance Bond.pdf','1.1 MB','ABC Construction','04 Feb 2026',1,'Compliance')],
+    milestones:[], variations:[variation('VAR-014-01','Additional culverts and side drains',50000000,15,'Approved',4,[['Project Manager','John Doe','18 Apr 2026'],['Department Head','James Mukasa','20 Apr 2026'],['Procurement','Procurement Unit','22 Apr 2026'],['Management','Nelson Tugume','24 Apr 2026']]),variation('VAR-014-02','Factory gate junction realignment',20000000,0,'Pending',1,[['Project Manager','John Doe','02 Jun 2026']])],
+    activity:[{date:'01 Feb 2026 09:14',actor:'John Doe',action:'Contract created and activated'},{date:'30 Mar 2026 16:45',actor:'John Doe',action:'Site Mobilization approved and payment request created'},{date:'24 Apr 2026 14:20',actor:'Nelson Tugume',action:'Variation VAR-014-01 approved'},{date:'28 May 2026 09:55',actor:'John Doe',action:'Foundation Works completion report generated'}]
+  };
+  const c1m1 = pay(approve(ml('Site Mobilization',50000000,'2026-03-15','Paid',
+    [['Establish site camp','Site offices, storage and welfare facilities','2026-02-20','Completed'],['Mobilize plant','Graders, rollers, water bowser and tippers on site','2026-03-10','Completed']],
+    [['Mobilization Report',true],['Equipment Delivery Notes',true],['Safety File',true]],
+    [['Site camp established',true],['Equipment on site',true],['Safety induction completed',true],['Insurance certificates submitted',true]],
+    [['Mobilization Report.pdf','1.2 MB','ABC Construction','12 Mar 2026'],['Site Establishment Photos.zip','38 MB','ABC Construction','12 Mar 2026']],
+    [['Kato Mubiru','contractor','Mobilization complete and ready for inspection.','14 Mar 2026 10:20'],['John Doe','pm','Verified during site visit.','15 Mar 2026 09:05']]),'CR-014-M1','30 Mar 2026','John Doe','James Mukasa','Site camp, signage, equipment and safety documentation verified.'),'014',1,5,'Paid',4,['30 Mar 2026','02 Apr 2026','04 Apr 2026','05 Apr 2026']);
+  const c1m2 = pay(approve(ml('Foundation and Base Course Works',150000000,'2026-05-20','Approved',
+    [['Excavation to formation','Cut and fill to design levels','2026-04-15','Completed'],['Sub-base layer','300mm compacted hardcore','2026-05-01','Completed'],['Base course','Crushed stone base course compacted','2026-05-15','Completed']],
+    [['Compaction Test Results',true],['Survey As-Built Levels',true],['Material Certificates',true]],
+    [['Excavation completed',true],['Compaction tests passed',true],['Materials approved',true],['Survey verification done',true]],
+    [['Compaction Test Results.pdf','940 KB','ABC Construction','22 May 2026'],['As-Built Survey Levels.pdf','1.6 MB','ABC Construction','24 May 2026']],
+    [['Kato Mubiru','contractor','Base course complete at 98.4 percent MDD.','25 May 2026 15:40'],['John Doe','pm','Inspection completed; minor edge raveling rectified.','27 May 2026 11:10']]),'CR-014-M2','28 May 2026','John Doe','James Mukasa','Formation and base course are within tolerance.'),'014',2,5,'Finance Review',2,['28 May 2026','03 Jun 2026',null,null]);
+  const c1m3 = ml('Structural Works - Gatehouse and Weighbridge',250000000,'2026-08-15','In Progress',
+    [['Erect columns','Cast reinforced concrete columns to grids A-F','2026-06-30','In Progress'],['Install reinforcement','Y16 and Y20 bars per structural drawings','2026-07-10','In Progress'],['Cast roof beam','Concrete placement and curing','2026-07-25','Pending']],
+    [['Structural Drawings',true],['Concrete Cube Results',false],['Engineer Approval',false]],
+    [['Columns constructed',false],['Reinforcement installed',false],['Cube test passed',false],['Drawings uploaded',true]],
+    [['Structural Drawings Rev C.pdf','8.4 MB','ABC Construction','03 Jun 2026'],['Column Casting Photos.zip','24 MB','ABC Construction','08 Jun 2026']],
+    [['Kato Mubiru','contractor','Column casting completed on grids A-C.','08 Jun 2026 16:30'],['John Doe','pm','Upload cube results before verification request.','09 Jun 2026 08:45']]);
+  const c1m4 = ml('Drainage, Surfacing and Road Furniture',400000000,'2026-12-15','Pending',
+    [['Drainage channels','Side drains and six precast culverts','2026-09-30','Pending'],['Surfacing','Prime coat and double surface dressing','2026-11-30','Pending'],['Road markings','Thermoplastic lines, signage and reflectors','2026-12-15','Pending']],
+    [['Drainage As-Builts',false],['Surfacing Records',false],['Signage Schedule',false]],
+    [['Culverts installed',false],['Surface dressing complete',false],['Reflectivity check passed',false]],[],[]);
+  c1.milestones = [c1m1,c1m2,c1m3,c1m4];
+
+  const c2 = {id:uid('CT'), number:'IAG/SUP/2026/021', name:'Wet Mill Processing Line Installation - Phase 1', contractor:'Pinhalense East Africa Ltd', contractorContact:'Sarah Achieng | +256 759 002 114 | s.achieng@pinhalense.co.ke', type:'Supply & Installation - Plant', startDate:'2026-03-10', endDate:'2026-09-30', location:'Africa Coffee Park, Ntungamo', pm:'James Mukasa', department:'Production Engineering', value:1240000000, retention:10, status:'Active', documents:[doc('Signed Supply Contract.pdf','3.6 MB','James Mukasa','10 Mar 2026',1,'Signed Contract'),doc('Equipment Technical Specifications.pdf','12.2 MB','Pinhalense EA','12 Mar 2026',1,'Technical Specifications'),doc('Plant Layout Drawings Rev B.pdf','9.7 MB','Pinhalense EA','15 Mar 2026',2,'Drawings')], milestones:[], variations:[variation('VAR-021-01','Additional operator training package',18000000,0,'Pending',2,[['Project Manager','James Mukasa','05 Jun 2026'],['Department Head','Nelson Tugume','08 Jun 2026']])], activity:[{date:'10 Mar 2026 10:00',actor:'James Mukasa',action:'Contract created and activated'},{date:'02 May 2026 12:30',actor:'James Mukasa',action:'Equipment delivery approved'},{date:'10 Jun 2026 14:01',actor:'Sarah Achieng',action:'Mechanical installation verification requested'}]};
+  const c2m1 = pay(approve(ml('Equipment Delivery to Site',496000000,'2026-04-30','Paid',
+    [['Freight and customs clearance','Mombasa to Ntungamo, customs cleared','2026-04-20','Completed'],['Delivery and offloading','Crane offload to staging warehouse','2026-04-28','Completed']],
+    [['Bill of Lading',true],['Customs Release',true],['Delivery Notes',true]],
+    [['All crates received',true],['No transit damage recorded',true],['Customs documentation complete',true]],
+    [['Packing List and Delivery Notes.pdf','2.3 MB','Pinhalense EA','29 Apr 2026']],
+    [['Sarah Achieng','contractor','All 14 crates delivered intact.','29 Apr 2026 11:15']]),'CR-021-M1','02 May 2026','James Mukasa','Nelson Tugume','All equipment verified against packing list.'),'021',1,10,'Paid',4,['02 May 2026','05 May 2026','06 May 2026','08 May 2026']);
+  const c2m2 = ml('Mechanical Installation',372000000,'2026-07-15','Verification Requested',
+    [['Position machinery','Pulpers, demucilagers and washing channels','2026-06-10','Completed'],['Mechanical alignment','Laser alignment of drive trains','2026-06-25','Completed'],['Water circuit','Recirculation system installation and pressure test','2026-07-08','Completed']],
+    [['Installation Records',true],['Alignment Certificates',true],['Pressure Test Results',true]],
+    [['Machinery positioned per layout',true],['Alignment within tolerance',true],['Water circuit pressure tested',true],['Safety guards fitted',true]],
+    [['Alignment Certificates.pdf','1.4 MB','Pinhalense EA','06 Jun 2026'],['Pressure Test Report.pdf','680 KB','Pinhalense EA','09 Jun 2026'],['Installation Photos.zip','41 MB','Pinhalense EA','09 Jun 2026']],
+    [['Sarah Achieng','contractor','Mechanical installation complete. Requesting verification.','10 Jun 2026 14:00']]);
+  const c2m3 = ml('Electrical Commissioning and Handover',372000000,'2026-09-30','Pending',
+    [['Power wiring','MCC panel, VFDs and field wiring','2026-08-05','Pending'],['Commissioning','Dry and wet commissioning trials','2026-08-30','Pending'],['Performance handover','Five-day throughput trial and final acceptance','2026-09-30','Pending']],
+    [['Commissioning Report',false],['Electrical Test Certificates',false],['O&M Manuals',false]],
+    [['Wiring complete and tested',false],['Wet commissioning passed',false],['Operator training delivered',false]],[],[]);
+  c2.milestones = [c2m1,c2m2,c2m3];
+
+  const c3 = {id:uid('CT'), number:'IAG/WRK/2026/029', name:'Export Warehouse B Construction', contractor:'Seyani Brothers & Co (U) Ltd', contractorContact:'Pravin Seyani | +256 752 333 901 | tenders@seyani.ug', type:'Works - Building Construction', startDate:'2026-07-01', endDate:'2027-04-30', location:'Africa Coffee Park, Ntungamo', pm:'John Doe', department:'Infrastructure & Estates', value:2150000000, retention:5, status:'Under Review', documents:[doc('Draft Contract - Warehouse B.pdf','3.1 MB','John Doe','28 May 2026',3,'Draft Contract'),doc('Architectural Drawings.pdf','18.4 MB','Design Office','20 May 2026',1,'Drawings'),doc('BOQ - Warehouse B.pdf','2.2 MB','QS Office','22 May 2026',1,'BOQ')], milestones:[ml('Mobilization and Setting Out',215000000,'2026-08-01','Pending',[['Mobilize to site','Camp, plant and hoarding','2026-07-20','Pending'],['Setting out','Survey and foundation setting out','2026-07-30','Pending']],[['Mobilization Report',false],['Setting Out Survey',false]],[['Camp established',false],['Setting out verified',false],['Insurances submitted',false]],[],[]),ml('Substructure and Ground Slab',537500000,'2026-10-30','Pending',[['Excavation','Bulk excavation and foundations','2026-09-15','Pending'],['Ground slab','Hardcore, blinding, reinforcement and concrete','2026-10-25','Pending']],[['Concrete Test Results',false],['Foundation Inspection Report',false]],[['Excavation to design levels',false],['Foundation concrete passed',false],['Ground slab cast and cured',false]],[],[])], variations:[], activity:[{date:'28 May 2026 15:20',actor:'John Doe',action:'Contract created in Under Review status'}]};
+
+  const c4 = {id:uid('CT'), number:'IAG/SVC/2026/033', name:'Coffee Park Utilities Design Consultancy', contractor:'EcoPlan Consulting Engineers', contractorContact:'Miriam Akello | +256 701 119 880 | projects@ecoplan.ug', type:'Consultancy Services', startDate:'2026-01-15', endDate:'2026-06-30', location:'Africa Coffee Park, Ntungamo', pm:'James Mukasa', department:'Production Engineering', value:320000000, retention:0, status:'Active', documents:[doc('Consultancy Agreement.pdf','2.0 MB','James Mukasa','15 Jan 2026',1,'Signed Contract'),doc('Inception Report.pdf','5.8 MB','EcoPlan','05 Feb 2026',1,'Report')], milestones:[], variations:[variation('VAR-033-01','Additional fire water model',12000000,7,'Rejected',1,[['Project Manager','James Mukasa','14 May 2026']])], activity:[{date:'15 Jan 2026 08:45',actor:'James Mukasa',action:'Consultancy contract created'},{date:'29 May 2026 13:00',actor:'EcoPlan Consulting Engineers',action:'Detailed design package submitted'}]};
+  const c4m1 = pay(approve(ml('Inception and Baseline Assessment',64000000,'2026-02-28','Paid',
+    [['Kick-off workshops','Stakeholder sessions and data gathering','2026-01-25','Completed'],['Baseline survey','Utilities demand and site condition baseline','2026-02-20','Completed']],
+    [['Inception Report',true],['Baseline Survey Dataset',true]],
+    [['Stakeholder workshop completed',true],['Baseline survey complete',true],['Report accepted',true]],
+    [['Inception Report.pdf','5.8 MB','EcoPlan','05 Feb 2026'],['Baseline Dataset.xlsx','1.3 MB','EcoPlan','20 Feb 2026']],
+    [['Miriam Akello','contractor','Inception package submitted for review.','21 Feb 2026 16:00']]),'CR-033-M1','28 Feb 2026','James Mukasa','Nelson Tugume','Inception deliverables accepted.'),'033',1,0,'Paid',4,['28 Feb 2026','02 Mar 2026','03 Mar 2026','04 Mar 2026']);
+  const c4m2 = pay(approve(ml('Detailed Engineering Design',160000000,'2026-05-31','Approved',
+    [['Process utilities design','Power, water, steam and drainage design','2026-04-30','Completed'],['Tender drawings','IFC drawings and technical specifications','2026-05-25','Completed']],
+    [['IFC Drawing Pack',true],['Technical Specifications',true],['Engineers Estimate',true]],
+    [['Design calculations complete',true],['Drawings issued for construction',true],['User department sign-off',true]],
+    [['IFC Drawing Pack.pdf','28 MB','EcoPlan','29 May 2026'],['Engineers Estimate.xlsx','740 KB','EcoPlan','29 May 2026']],
+    [['Miriam Akello','contractor','Final design package uploaded.','29 May 2026 13:00']]),'CR-033-M2','05 Jun 2026','James Mukasa','Nelson Tugume','Design package reviewed and accepted by Production Engineering.'),'033',2,0,'Payment Authorization',3,['05 Jun 2026','07 Jun 2026','10 Jun 2026',null]);
+  const c4m3 = ml('Tender Support and Closeout',96000000,'2026-06-30','Under Inspection',
+    [['Tender clarifications','Respond to bidder technical queries','2026-06-20','In Progress'],['Closeout file','Final design register and lessons learned','2026-06-30','Pending']],
+    [['Clarification Register',true],['Closeout Report',false]],
+    [['Clarifications logged',true],['Closeout report submitted',false],['Final invoice reconciled',false]],
+    [['Clarification Register.xlsx','510 KB','EcoPlan','11 Jun 2026']],
+    [['James Mukasa','pm','Reviewing clarification log before closeout approval.','12 Jun 2026 09:30']]);
+  c4m3.inspection = {date:'2026-06-12', inspector:'James Mukasa', observations:'Clarification register is complete. Closeout report remains outstanding.', issues:'Closeout report pending.', recommendation:'Reject - rework required'};
+  c4.milestones = [c4m1,c4m2,c4m3];
+
+  const c5 = {id:uid('CT'), number:'IAG/SUP/2025/044', name:'Laboratory Equipment Supply and Calibration', contractor:'LabTech Uganda Ltd', contractorContact:'Doreen Namatovu | +256 788 451 210 | service@labtech.ug', type:'Supply of Goods', startDate:'2025-11-01', endDate:'2026-04-30', location:'Quality Laboratory, Ntungamo', pm:'John Doe', department:'Quality Assurance', value:410000000, retention:5, status:'Completed', documents:[doc('Signed Supply Agreement.pdf','2.7 MB','John Doe','01 Nov 2025',1,'Signed Contract'),doc('Warranty Certificates.pdf','1.5 MB','LabTech Uganda','29 Apr 2026',1,'Warranty')], milestones:[], variations:[], activity:[{date:'01 Nov 2025 11:10',actor:'John Doe',action:'Supply contract activated'},{date:'30 Apr 2026 15:40',actor:'John Doe',action:'Contract marked completed after final calibration'}]};
+  const c5m1 = pay(approve(ml('Equipment Delivery',246000000,'2026-01-15','Paid',
+    [['Deliver equipment','Moisture meters, sample roasters and cupping lab items','2026-01-10','Completed']],
+    [['Delivery Notes',true],['Serial Number Register',true]],
+    [['All equipment delivered',true],['Serial numbers verified',true],['Warranty documents submitted',true]],
+    [['Delivery Notes.pdf','1.0 MB','LabTech Uganda','12 Jan 2026'],['Serial Number Register.xlsx','320 KB','LabTech Uganda','12 Jan 2026']],[]),'CR-044-M1','16 Jan 2026','John Doe','James Mukasa','Equipment delivered and verified.'),'044',1,5,'Paid',4,['16 Jan 2026','18 Jan 2026','20 Jan 2026','21 Jan 2026']);
+  const c5m2 = pay(approve(ml('Calibration and User Training',164000000,'2026-04-30','Paid',
+    [['Calibration','Factory and field calibration for all devices','2026-04-10','Completed'],['Training','User training and handover certificates','2026-04-25','Completed']],
+    [['Calibration Certificates',true],['Training Attendance Register',true],['Final Handover Certificate',true]],
+    [['Calibration certificates issued',true],['Training completed',true],['Final handover signed',true]],
+    [['Calibration Certificates.pdf','2.1 MB','LabTech Uganda','25 Apr 2026'],['Training Attendance Register.pdf','600 KB','LabTech Uganda','25 Apr 2026']],[]),'CR-044-M2','30 Apr 2026','John Doe','James Mukasa','All equipment calibrated and users trained.'),'044',2,5,'Paid',4,['30 Apr 2026','02 May 2026','04 May 2026','05 May 2026']);
+  c5.milestones = [c5m1,c5m2];
+
+  const governance = {
+    requests:[
+      {id:uid('REQ'), no:'REQ-2026-018', title:'Solar Backup for Wet Mill Controls', department:'Production Engineering', requester:'Sarah Nakitende', type:'Supply & Installation - Plant', procurementMethod:'Restricted Bidding', supplier:'SolarNow Uganda Ltd', estimate:286000000, budgetCode:'CAPEX-ACP-ENG-042', urgency:'High', status:'Pending Approval', stage:1, approvals:[{step:'Project Manager',by:'James Mukasa',date:'11 Jun 2026'},{step:'Department Head',by:null,date:null},{step:'Finance',by:null,date:null},{step:'Management',by:null,date:null}], justification:'Controls line requires backup power to prevent wet coffee quality losses during outages.', docs:[doc('Technical Need Statement.pdf','780 KB','Production Engineering','11 Jun 2026',1,'Request Support')], linkedContract:null},
+      {id:uid('REQ'), no:'REQ-2026-011', title:'Warehouse Fire Detection System', department:'Infrastructure & Estates', requester:'Peter Kisembo', type:'Works - Building Services', procurementMethod:'Open Domestic Bidding', supplier:'SafeLine Systems Ltd', estimate:148000000, budgetCode:'CAPEX-ACP-INF-019', urgency:'Medium', status:'Approved', stage:4, approvals:[{step:'Project Manager',by:'John Doe',date:'22 May 2026'},{step:'Department Head',by:'James Mukasa',date:'23 May 2026'},{step:'Finance',by:'Irene Tumusiime',date:'24 May 2026'},{step:'Management',by:'Nelson Tugume',date:'25 May 2026'}], justification:'Fire detection coverage required before Warehouse B commissioning.', docs:[doc('Fire Systems Scope.pdf','1.1 MB','Infrastructure & Estates','21 May 2026',1,'Scope')], linkedContract:null},
+      {id:uid('REQ'), no:'REQ-2026-006', title:'Quality Lab Calibration Support', department:'Quality Assurance', requester:'Agnes Birungi', type:'Consultancy Services', procurementMethod:'Direct Procurement', supplier:'LabTech Uganda Ltd', estimate:52000000, budgetCode:'OPEX-QA-118', urgency:'Low', status:'Converted', stage:4, approvals:[{step:'Project Manager',by:'John Doe',date:'05 Jan 2026'},{step:'Department Head',by:'James Mukasa',date:'06 Jan 2026'},{step:'Finance',by:'Irene Tumusiime',date:'07 Jan 2026'},{step:'Management',by:'Nelson Tugume',date:'08 Jan 2026'}], justification:'Specialist calibration support required for export quality certification.', docs:[doc('Calibration Justification.pdf','460 KB','Quality Assurance','05 Jan 2026',1,'Request Support')], linkedContract:c5.id}
+    ],
+    approvalRules:[
+      {id:'AR-01', name:'Low Value Contract', applies:'Contracts below UGX 50M', threshold:'< UGX 50M', route:['Project Manager','Finance Officer'], status:'Active'},
+      {id:'AR-02', name:'Standard Contract', applies:'UGX 50M to UGX 500M', threshold:'UGX 50M - 500M', route:['Project Manager','Department Head','Finance Officer'], status:'Active'},
+      {id:'AR-03', name:'High Value Contract', applies:'Above UGX 500M', threshold:'> UGX 500M', route:['Project Manager','Department Head','Procurement','Management'], status:'Active'},
+      {id:'AR-04', name:'Material Variation', applies:'Variation above 10% of original contract', threshold:'> 10%', route:['Project Manager','Department Head','Procurement','Management'], status:'Active'}
+    ],
+    templates:[
+      {id:'TPL-WRK', name:'Works Contract Template', type:'Works', owner:'Procurement Unit', version:'v3.2', status:'Approved', clauses:['Payment milestones','Retention','Defects liability','Performance bond','Liquidated damages']},
+      {id:'TPL-SUP', name:'Supply and Installation Template', type:'Supply', owner:'Procurement Unit', version:'v2.4', status:'Approved', clauses:['Delivery acceptance','Warranty','Installation safety','Training','Spares support']},
+      {id:'TPL-SVC', name:'Consultancy Services Template', type:'Services', owner:'Legal', version:'v1.8', status:'Under Review', clauses:['Deliverables','IP ownership','Confidentiality','Professional indemnity','Data protection']}
+    ],
+    clauses:[
+      {id:'CL-RET', title:'Retention', risk:'Medium', approved:true, owner:'Finance', text:'Retention shall be deducted from certified sums and released according to the contract closeout conditions.'},
+      {id:'CL-LD', title:'Liquidated Damages', risk:'High', approved:true, owner:'Legal', text:'Delay damages apply where completion is later than the approved contract completion date.'},
+      {id:'CL-ESG', title:'Environmental and Social Safeguards', risk:'High', approved:true, owner:'Compliance', text:'The contractor shall comply with site environmental, safety, labour and community protection requirements.'},
+      {id:'CL-DATA', title:'Data Protection and Confidentiality', risk:'Medium', approved:false, owner:'Legal', text:'Supplier access to operational data must be limited, logged and confidential.'}
+    ],
+    obligations:[
+      {id:uid('OB'), contractId:c1.id, type:'Performance Bond', owner:'ABC Construction Ltd', dueDate:'2026-12-30', frequency:'Once', evidence:'Valid bond certificate', status:'Compliant', escalation:'Finance Officer'},
+      {id:uid('OB'), contractId:c1.id, type:'Insurance Renewal', owner:'ABC Construction Ltd', dueDate:'2026-07-31', frequency:'Annual', evidence:'Contractors all-risk policy', status:'Due Soon', escalation:'Project Manager'},
+      {id:uid('OB'), contractId:c1.id, type:'Environmental Controls', owner:'ABC Construction Ltd', dueDate:'2026-06-30', frequency:'Monthly', evidence:'HSE inspection checklist', status:'Open', escalation:'Department Head'},
+      {id:uid('OB'), contractId:c2.id, type:'Warranty Documents', owner:'Pinhalense East Africa Ltd', dueDate:'2026-09-30', frequency:'Once', evidence:'OEM warranty pack', status:'Open', escalation:'Project Manager'},
+      {id:uid('OB'), contractId:c2.id, type:'Operator Training', owner:'Pinhalense East Africa Ltd', dueDate:'2026-08-30', frequency:'Once', evidence:'Training attendance register', status:'Open', escalation:'Department Head'},
+      {id:uid('OB'), contractId:c3.id, type:'Performance Bond', owner:'Seyani Brothers & Co (U) Ltd', dueDate:'2026-07-01', frequency:'Once', evidence:'Bond before commencement', status:'Overdue', escalation:'Management'},
+      {id:uid('OB'), contractId:c4.id, type:'Professional Indemnity Cover', owner:'EcoPlan Consulting Engineers', dueDate:'2026-06-15', frequency:'Once', evidence:'PI insurance certificate', status:'Due Soon', escalation:'Procurement'},
+      {id:uid('OB'), contractId:c5.id, type:'Warranty Support', owner:'LabTech Uganda Ltd', dueDate:'2027-04-30', frequency:'On demand', evidence:'Warranty call log', status:'Compliant', escalation:'Quality Assurance'}
+    ],
+    budgets:[
+      {code:'CAPEX-ACP-INF-014', name:'Access Road and Gatehouse', owner:'Infrastructure & Estates', approved:950000000, committed:contractValue(c1), paid:paidAmount(c1)},
+      {code:'CAPEX-ACP-ENG-021', name:'Wet Mill Processing Line', owner:'Production Engineering', approved:1300000000, committed:contractValue(c2), paid:paidAmount(c2)},
+      {code:'CAPEX-ACP-INF-029', name:'Export Warehouse B', owner:'Infrastructure & Estates', approved:2300000000, committed:contractValue(c3), paid:paidAmount(c3)},
+      {code:'OPEX-ACP-ENG-033', name:'Utilities Design Consultancy', owner:'Production Engineering', approved:350000000, committed:contractValue(c4), paid:paidAmount(c4)},
+      {code:'CAPEX-QA-044', name:'Quality Lab Equipment', owner:'Quality Assurance', approved:430000000, committed:contractValue(c5), paid:paidAmount(c5)}
+    ],
+    execution:{},
+    closeouts:{}
+  };
+  [c1,c2,c3,c4,c5].forEach(c=>{
+    governance.execution[c.id] = {contractId:c.id, stage:c.status==='Under Review'?1:5, steps:['Draft prepared','Internal approvals complete','Sent to contractor','Contractor signed','IAG signed','Fully executed'], executionDate:c.status==='Under Review'?null:c.startDate, signedDocument:c.documents.find(d=>/signed/i.test(d.name))?.name||null};
+    governance.closeouts[c.id] = {contractId:c.id, finalAccount:c.status==='Completed', retentionDecision:c.status==='Completed', defectsLiability:c.status==='Completed', documentsComplete:c.documents.length>=2, unresolvedVariations:c.variations.filter(v=>v.status==='Pending').length, finalReport:c.status==='Completed', status:c.status==='Completed'?'Ready for Archive':'Open'};
+  });
+  return {
+    currentRole:'pm',
+    view:{name:'dashboard'},
+    contracts:[c1,c2,c3,c4,c5],
+    requests:governance.requests,
+    approvalRules:governance.approvalRules,
+    templates:governance.templates,
+    clauses:governance.clauses,
+    obligations:governance.obligations,
+    budgets:governance.budgets,
+    execution:governance.execution,
+    closeouts:governance.closeouts,
+    notifications:[
+      {id:uid('NT'), role:'pm', icon:'VERIFY', text:'Verification requested: Mechanical Installation - Wet Mill Processing Line (IAG/SUP/2026/021)', date:'10 Jun 2026 14:01', read:false},
+      {id:uid('NT'), role:'pm', icon:'INSPECT', text:'Tender Support and Closeout is under inspection for EcoPlan consultancy', date:'12 Jun 2026 09:30', read:false},
+      {id:uid('NT'), role:'finance', icon:'PAY', text:'PAY-014-02 (UGX 142.5M) awaiting Finance Review', date:'28 May 2026 17:10', read:false},
+      {id:uid('NT'), role:'finance', icon:'PAY', text:'PAY-033-02 authorized - ready to disburse', date:'10 Jun 2026 12:00', read:false},
+      {id:uid('NT'), role:'management', icon:'VAR', text:'VAR-014-02 for UGX 20M is waiting in the approval workflow', date:'02 Jun 2026 10:30', read:false},
+      {id:uid('NT'), role:'dept', icon:'VAR', text:'VAR-021-01 has reached Department Head approval', date:'08 Jun 2026 09:15', read:false},
+      {id:uid('NT'), role:'contractor', icon:'OK', text:'Foundation and Base Course Works approved - payment request created', date:'28 May 2026 09:56', read:true},
+      {id:uid('NT'), role:'contractor', icon:'PAY', text:'Payment of UGX 47.5M released - Site Mobilization', date:'05 Apr 2026 10:13', read:true}
+    ]
+  };
+}
+
+let S = load() || seed();
+save();
+
+/* ---------------- DERIVED ---------------- */
+function pendingApprovals(){
+  let n = (S.requests||[]).filter(r=>r.status==='Pending Approval').length;
+  S.contracts.forEach(c=>{ n += c.variations.filter(v=>v.status==='Pending').length; n += c.milestones.filter(m=>m.payment&&m.payment.status!=='Paid').length; });
+  return n;
+}
+function obligationContract(o){ return findContract(o.contractId) || {number:'-', name:'Unlinked contract'}; }
+function obligationRisk(o){ if(o.status==='Overdue') return 35; if(o.status==='Due Soon') return 18; if(o.status==='Open') return 10; return 0; }
+function riskScore(c){
+  const overdueMs = c.milestones.filter(m=>!['Approved','Paid','Completed'].includes(m.status)&&new Date(m.targetDate)<new Date()).length;
+  const pendingVars = c.variations.filter(v=>v.status==='Pending').length;
+  const unpaid = c.milestones.filter(m=>m.payment&&m.payment.status!=='Paid').length;
+  const obs = (S.obligations||[]).filter(o=>o.contractId===c.id).reduce((s,o)=>s+obligationRisk(o),0);
+  const endDays = Math.round((new Date(c.endDate)-new Date())/864e5);
+  return Math.min(100, overdueMs*25 + pendingVars*15 + unpaid*12 + obs + (endDays>0&&endDays<45?15:0));
+}
+function riskLabel(score){ return score>=75?'Critical':score>=50?'High':score>=25?'Medium':'Low'; }
+function riskPill(score){ return pill(riskLabel(score), {'Low':'p-green','Medium':'p-amber','High':'p-red','Critical':'p-red'}); }
+function budgetFor(c){ return (S.budgets||[]).find(b=>b.committed===contractValue(c)) || (S.budgets||[]).find(b=>c.department&&b.owner===c.department); }
+function ensureGovernance(){
+  S.requests ||= []; S.approvalRules ||= []; S.templates ||= []; S.clauses ||= []; S.obligations ||= []; S.budgets ||= []; S.execution ||= {}; S.closeouts ||= {};
+  S.contracts.forEach(c=>{
+    if(!S.execution[c.id]) S.execution[c.id] = {contractId:c.id, stage:c.status==='Under Review'?1:5, steps:['Draft prepared','Internal approvals complete','Sent to contractor','Contractor signed','IAG signed','Fully executed'], executionDate:c.status==='Under Review'?null:c.startDate, signedDocument:c.documents.find(d=>/signed/i.test(d.name))?.name||null};
+    if(!S.closeouts[c.id]) S.closeouts[c.id] = {contractId:c.id, finalAccount:false, retentionDecision:false, defectsLiability:false, documentsComplete:c.documents.length>1, unresolvedVariations:c.variations.filter(v=>v.status==='Pending').length, finalReport:false, status:'Open'};
+  });
+}
+ensureGovernance();
+function contractValue(c){ return c.value + c.variations.filter(v=>v.status==='Approved').reduce((s,v)=>s+v.amount,0); }
+function paidAmount(c){ return c.milestones.filter(m=>m.payment&&m.payment.status==='Paid').reduce((s,m)=>s+m.payment.payable,0); }
+function approvedCount(c){ return c.milestones.filter(m=>['Approved','Paid','Completed'].includes(m.status)).length; }
+function progress(c){
+  const tot = c.milestones.reduce((s,m)=>s+m.value,0)||1;
+  const done = c.milestones.filter(m=>['Approved','Paid','Completed'].includes(m.status)).reduce((s,m)=>s+m.value,0);
+  const part = c.milestones.filter(m=>m.status==='In Progress'||m.status==='Verification Requested'||m.status==='Under Inspection')
+    .reduce((s,m)=> s + m.value * (m.checklist.filter(x=>x.done).length / (m.checklist.length||1)) * 0.8, 0);
+  return Math.round((done+part)/tot*100);
+}
+function findContract(id){ return S.contracts.find(c=>c.id===id); }
+function findMilestone(cid, mid){ const c=findContract(cid); return c ? c.milestones.find(m=>m.id===mid) : null; }
+function logActivity(c, action){ c.activity.unshift({date:nowStr(), actor:USERS[S.currentRole].name, action}); }
+function notify(role, icon, text){ S.notifications.unshift({id:uid('NT'), role, icon, text, date:nowStr(), read:false}); }
+function toast(msg){
+  $('toastMsg').textContent = msg; const t=$('toast'); t.classList.add('show');
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+/* =====================================================================
+   ROUTER & VIEWS
+===================================================================== */
+function go(name, p1, p2, p3){ S.view = {name, p1, p2, p3}; save(); render(); }
+
+function render(){
+  // sidebar active state
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const v = n.dataset.view;
+    n.classList.toggle('active', v===S.view.name || (S.view.name==='contract'&&v==='contracts') || (S.view.name==='milestone'&&v==='contracts'));
+  });
+  // counters
+  $('cntContracts').textContent = S.contracts.length;
+  $('cntMilestones').textContent = S.contracts.reduce((s,c)=>s+c.milestones.length,0);
+  $('cntPayments').textContent = S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>m.payment).length,0);
+  $('cntVariations').textContent = S.contracts.reduce((s,c)=>s+c.variations.length,0);
+  // user chip
+  const u = USERS[S.currentRole];
+  $('userAvatar').textContent = u.av; $('userAvatar').style.background = u.col;
+  $('userName').textContent = u.name; $('userRole').textContent = u.label;
+  $('roleSelect').innerHTML = Object.keys(USERS).map(k=>'<option value="'+k+'"'+(k===S.currentRole?' selected':'')+'>'+USERS[k].label+'</option>').join('');
+  renderNotifs();
+
+  const v = S.view;
+  const M = $('main');
+  if (v.name==='dashboard')   M.innerHTML = vDashboard();
+  else if (v.name==='requests') M.innerHTML = vRequests();
+  else if (v.name==='contracts') M.innerHTML = vContracts();
+  else if (v.name==='contract')  M.innerHTML = vContract(v.p1, v.p2||'overview');
+  else if (v.name==='milestone') M.innerHTML = vMilestone(v.p1, v.p2);
+  else if (v.name==='milestones') M.innerHTML = vAllMilestones();
+  else if (v.name==='payments')  M.innerHTML = vAllPayments();
+  else if (v.name==='variations') M.innerHTML = vAllVariations();
+  else if (v.name==='approvals') M.innerHTML = vApprovals();
+  else if (v.name==='obligations') M.innerHTML = vObligations();
+  else if (v.name==='risk') M.innerHTML = vRisk();
+  else if (v.name==='templates') M.innerHTML = vTemplates();
+  else if (v.name==='budgets') M.innerHTML = vBudgets();
+  else if (v.name==='closeout') M.innerHTML = vCloseout();
+  else if (v.name==='reports')   M.innerHTML = vReports(v.p1||'contracts');
+  M.scrollTop = 0;
+}
+
+/* ---------------- EXECUTIVE DASHBOARD ---------------- */
+function vDashboard(){
+  const total = S.contracts.length;
+  const active = S.contracts.filter(c=>c.status==='Active').length;
+  const totalVal = S.contracts.reduce((s,c)=>s+contractValue(c),0);
+  const completedVal = S.contracts.reduce((s,c)=>s+paidAmount(c),0);
+  const outstanding = totalVal - completedVal;
+  const pendingVerif = S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>m.status==='Verification Requested'||m.status==='Under Inspection').length,0);
+  const pendingPay = S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>m.payment&&m.payment.status!=='Paid').length,0);
+  const overdue = S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>!['Approved','Paid','Completed'].includes(m.status)&&new Date(m.targetDate)<new Date()).length,0);
+  const pendingVars = S.contracts.reduce((s,c)=>s+c.variations.filter(v=>v.status==='Pending').length,0);
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="crumb">IAG | Africa Coffee Park | Contract Management</div>
+      <div class="page-title">Executive Dashboard</div>
+      <div class="page-sub">Portfolio position as at ${fmtDate(today())} Â· all values in Ugandan Shillings</div>
+    </div>
+    ${can('createContract')?'<button class="btn btn-primary" onclick="App.openNewContract()">ï¼‹ New Contract</button>':''}
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total Contracts</div><div class="kpi-value">${total}</div><div class="kpi-trend"><b class="up">${active} active</b> Â· ${S.contracts.filter(c=>c.status==='Under Review').length} under review</div></div>
+    <div class="kpi k-saffron"><div class="kpi-label">Portfolio Value</div><div class="kpi-value">${fmtUGX(totalVal).replace('UGX ','')}</div><div class="kpi-trend">incl. approved variations</div></div>
+    <div class="kpi k-green"><div class="kpi-label">Released / Paid</div><div class="kpi-value">${fmtUGX(completedVal).replace('UGX ','')}</div><div class="kpi-trend"><b class="up">${totalVal?Math.round(completedVal/totalVal*100):0}%</b> of portfolio</div></div>
+    <div class="kpi k-red"><div class="kpi-label">Outstanding</div><div class="kpi-value">${fmtUGX(outstanding).replace('UGX ','')}</div><div class="kpi-trend">committed, not yet paid</div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi k-violet"><div class="kpi-label">Pending Verifications</div><div class="kpi-value">${pendingVerif}</div><div class="kpi-trend">awaiting PM inspection</div></div>
+    <div class="kpi k-saffron"><div class="kpi-label">Pending Payments</div><div class="kpi-value">${pendingPay}</div><div class="kpi-trend">in payment workflow</div></div>
+    <div class="kpi k-red"><div class="kpi-label">Overdue Milestones</div><div class="kpi-value">${overdue}</div><div class="kpi-trend">${overdue?'<b class="down">requires attention</b>':'<b class="up">on schedule</b>'}</div></div>
+    <div class="kpi"><div class="kpi-label">Pending Variations</div><div class="kpi-value">${pendingVars}</div><div class="kpi-trend">in approval workflow</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Contract Portfolio</div><button class="btn btn-ghost btn-sm" onclick="App.go('contracts')">View all â†’</button></div>
+      <table><thead><tr><th>Contract</th><th>Value</th><th>Progress</th><th>Status</th></tr></thead><tbody>
+      ${S.contracts.map(c=>`<tr class="row-click" onclick="App.go('contract','${c.id}')">
+        <td><div class="b">${esc(c.name)}</div><div class="td-sub mono">${esc(c.number)} Â· ${esc(c.contractor)}</div></td>
+        <td class="mono">${fmtUGX(contractValue(c))}</td>
+        <td><div class="prog-wrap"><div class="prog"><i style="width:${progress(c)}%"></i></div><span class="prog-pct">${progress(c)}%</span></div></td>
+        <td>${pill(c.status, CT_STATUS_PILL)}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Requires Action</div></div>
+      <div class="panel-body" style="padding-top:12px">
+        ${actionQueue()}
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Released vs Outstanding by Contract</div></div>
+    <div class="panel-body">
+      ${S.contracts.map(c=>{const v=contractValue(c),p=paidAmount(c);return `
+      <div class="bar-row"><div class="bar-lbl">${esc(c.name.split('-')[0].trim())}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(v?p/v*100:0,3)}%">${fmtUGX(p)}</div></div>
+        <div class="bar-val">of ${fmtUGX(v)}</div></div>`;}).join('')}
+    </div>
+  </div>`;
+}
+
+function actionQueue(){
+  const items = [];
+  S.contracts.forEach(c=>{
+    c.milestones.forEach(m=>{
+      if (m.status==='Verification Requested') items.push({icon:'ðŸ”Ž', pill:'<span class="pill p-amber">Verify</span>', text:`<b>${esc(m.name)}</b> - verification requested`, sub:c.name, fn:`App.go('milestone','${c.id}','${m.id}')`});
+      if (m.payment && m.payment.status!=='Paid') items.push({icon:'â‚£', pill:'<span class="pill p-blue">'+esc(m.payment.status)+'</span>', text:`<b>${esc(m.payment.id)}</b> Â· ${fmtUGX(m.payment.payable)} payable`, sub:m.name+' - '+c.name, fn:`App.go('contract','${c.id}','payments')`});
+      if (!['Approved','Paid','Completed'].includes(m.status) && new Date(m.targetDate)<new Date()) items.push({icon:'â°', pill:'<span class="pill p-red">Overdue</span>', text:`<b>${esc(m.name)}</b> - target ${fmtDate(m.targetDate)}`, sub:c.name, fn:`App.go('milestone','${c.id}','${m.id}')`});
+    });
+    c.variations.filter(v=>v.status==='Pending').forEach(v=>items.push({icon:'Â±', pill:'<span class="pill p-violet">Variation</span>', text:`<b>${esc(v.number)}</b> Â· ${esc(v.title)} (${fmtUGX(v.amount)})`, sub:'Stage: '+VAR_STAGES[Math.min(v.stage,3)], fn:`App.go('contract','${c.id}','variations')`}));
+  });
+  if (!items.length) return '<div class="empty"><div class="e-ic">âœ“</div>Nothing requires action. All workflows current.</div>';
+  return items.slice(0,7).map(i=>`
+    <div class="doc-row" style="cursor:pointer" onclick="${i.fn}">
+      <div class="doc-ic">${i.icon}</div>
+      <div style="flex:1"><div style="font-size:13px">${i.text}</div><div class="doc-meta">${esc(i.sub)}</div></div>
+      ${i.pill}
+    </div>`).join('');
+}
+
+
+/* ---------------- GOVERNANCE: REQUESTS / APPROVALS / OBLIGATIONS ---------------- */
+function reqPill(status){ return pill(status, {'Draft':'p-slate','Pending Approval':'p-amber','Approved':'p-blue','Converted':'p-green','Rejected':'p-red'}); }
+function obPill(status){ return pill(status, {'Compliant':'p-green','Open':'p-blue','Due Soon':'p-amber','Overdue':'p-red','Waived':'p-slate'}); }
+function vRequests(){
+  const pending = S.requests.filter(r=>r.status==='Pending Approval').length;
+  const approved = S.requests.filter(r=>r.status==='Approved').length;
+  const converted = S.requests.filter(r=>r.status==='Converted').length;
+  return `
+  <div class="page-head"><div><div class="crumb">Governance / Intake</div><div class="page-title">Contract Requests</div><div class="page-sub">A clean intake queue for proposed contracts before they enter the contract register.</div></div><button class="btn btn-primary" onclick="App.openNewRequest()">+ New Request</button></div>
+  <div class="kpi-row"><div class="kpi"><div class="kpi-label">Requests</div><div class="kpi-value">${S.requests.length}</div></div><div class="kpi k-saffron"><div class="kpi-label">Pending</div><div class="kpi-value">${pending}</div></div><div class="kpi k-green"><div class="kpi-label">Approved</div><div class="kpi-value">${approved}</div></div><div class="kpi k-violet"><div class="kpi-label">Converted</div><div class="kpi-value">${converted}</div></div></div>
+  <div class="gov-card-grid">
+    ${S.requests.map(r=>`<div class="gov-card"><div class="gov-card-top"><div><div class="gov-card-title">${esc(r.title)}</div><div class="gov-card-meta">${esc(r.no)} | ${esc(r.department)}</div></div>${reqPill(r.status)}</div><div class="gov-card-copy">${esc(r.justification)}</div><div class="info-grid" style="margin-top:10px"><div class="info-item"><div class="k">Supplier</div><div class="v">${esc(r.supplier)}</div></div><div class="info-item"><div class="k">Estimate</div><div class="v big">${fmtUGX(r.estimate)}</div></div><div class="info-item"><div class="k">Method</div><div class="v">${esc(r.procurementMethod)}</div></div><div class="info-item"><div class="k">Approval</div><div class="v">${r.stage}/${r.approvals.length}</div></div></div><div class="gov-actions">${requestAction(r)}</div></div>`).join('')}
+  </div>`;
+}
+function requestAction(r){
+  if(r.status==='Pending Approval') return `<button class="btn btn-green btn-sm" onclick="App.approveRequest('${r.id}')">Approve Step</button>`;
+  if(r.status==='Approved'&&!r.linkedContract) return `<button class="btn btn-primary btn-sm" onclick="App.convertRequest('${r.id}')">Create Draft Contract</button>`;
+  if(r.linkedContract) return `<button class="btn btn-ghost btn-sm" onclick="App.go('contract','${r.linkedContract}')">Open Contract</button>`;
+  return '<span class="mono">No action</span>';
+}
+function vApprovals(){
+  const reqs = S.requests.filter(r=>r.status==='Pending Approval');
+  const vars = []; S.contracts.forEach(c=>c.variations.filter(v=>v.status==='Pending').forEach(v=>vars.push({c,v})));
+  const pays = []; S.contracts.forEach(c=>c.milestones.filter(m=>m.payment&&m.payment.status!=='Paid').forEach(m=>pays.push({c,m,p:m.payment})));
+  return `
+  <div class="page-head"><div><div class="crumb">Governance / Approvals</div><div class="page-title">Approval Workbench</div><div class="page-sub">Focused work queues for the approvals that need attention now.</div></div></div>
+  <div class="grid-3"><div class="panel"><div class="panel-head"><div class="panel-title">Intake</div><span class="pill p-amber">${reqs.length}</span></div><div class="panel-body">${reqs.map(r=>`<div class="doc-row"><div class="doc-ic">IN</div><div style="flex:1"><div class="doc-name">${esc(r.title)}</div><div class="doc-meta">${esc(r.no)} | Next: ${esc(r.approvals[r.stage]?.step||'Complete')}</div></div><button class="btn btn-green btn-sm" onclick="App.approveRequest('${r.id}')">Approve</button></div>`).join('')||'<div class="empty">No intake approvals pending.</div>'}</div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Variations</div><span class="pill p-violet">${vars.length}</span></div><div class="panel-body">${vars.map(({c,v})=>`<div class="doc-row"><div class="doc-ic">VR</div><div style="flex:1"><div class="doc-name">${esc(v.title)}</div><div class="doc-meta">${esc(c.number)} | ${fmtUGX(v.amount)}</div></div><button class="btn btn-ghost btn-sm" onclick="App.openVariation('${c.id}','${v.id}')">Open</button></div>`).join('')||'<div class="empty">No variation approvals pending.</div>'}</div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Payments</div><span class="pill p-blue">${pays.length}</span></div><div class="panel-body">${pays.map(({c,m,p})=>`<div class="doc-row"><div class="doc-ic">PY</div><div style="flex:1"><div class="doc-name">${esc(p.id)}</div><div class="doc-meta">${esc(p.status)} | ${fmtUGX(p.payable)} | ${esc(m.name)}</div></div><button class="btn btn-green btn-sm" onclick="App.advancePayment('${c.id}','${m.id}')">Advance</button></div>`).join('')||'<div class="empty">No payment approvals pending.</div>'}</div></div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Approval Matrix</div></div><div class="table-wrap"><table class="gov-table"><thead><tr><th>Rule</th><th>Applies To</th><th>Route</th><th>Status</th></tr></thead><tbody>${S.approvalRules.map(r=>`<tr><td><div class="b">${esc(r.name)}</div><div class="td-sub">${esc(r.threshold)}</div></td><td>${esc(r.applies)}</td><td>${esc(r.route.join(' > '))}</td><td>${pill(r.status,{'Active':'p-green'})}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function vObligations(){
+  const overdue = S.obligations.filter(o=>o.status==='Overdue').length;
+  const due = S.obligations.filter(o=>o.status==='Due Soon').length;
+  const open = S.obligations.filter(o=>o.status==='Open').length;
+  return `
+  <div class="page-head"><div><div class="crumb">Governance / Obligations</div><div class="page-title">Obligation Register</div><div class="page-sub">Track non-milestone duties such as bonds, insurance, warranties, training and compliance evidence.</div></div></div>
+  <div class="kpi-row"><div class="kpi k-red"><div class="kpi-label">Overdue</div><div class="kpi-value">${overdue}</div></div><div class="kpi k-saffron"><div class="kpi-label">Due Soon</div><div class="kpi-value">${due}</div></div><div class="kpi"><div class="kpi-label">Open</div><div class="kpi-value">${open}</div></div><div class="kpi k-green"><div class="kpi-label">Compliant</div><div class="kpi-value">${S.obligations.filter(o=>o.status==='Compliant').length}</div></div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Active Obligations</div></div><div class="table-wrap"><table class="gov-table"><thead><tr><th>Obligation</th><th>Contract</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody>${S.obligations.map(o=>{const c=obligationContract(o);return `<tr><td><div class="b">${esc(o.type)}</div><div class="td-sub">Owner: ${esc(o.owner)} | Evidence: ${esc(o.evidence)}</div></td><td>${esc(c.number)}<div class="td-sub">${esc(c.name)}</div></td><td><span class="mono">${fmtDate(o.dueDate)}</span><div class="td-sub">Escalate: ${esc(o.escalation)}</div></td><td>${obPill(o.status)}</td><td><button class="btn btn-ghost btn-sm" onclick="App.cycleObligation('${o.id}')">Update</button></td></tr>`;}).join('')}</tbody></table></div></div>`;
+}
+function vRisk(){
+  const rows = S.contracts.map(c=>({c, score:riskScore(c)})).sort((a,b)=>b.score-a.score);
+  const high = rows.filter(r=>r.score>=50).length;
+  return `
+  <div class="page-head"><div><div class="crumb">Governance / Risk</div><div class="page-title">Contract Risk Dashboard</div><div class="page-sub">A portfolio view of risk drivers using obligations, payment gates, variations, overdue milestones and expiry exposure.</div></div></div>
+  <div class="kpi-row"><div class="kpi k-red"><div class="kpi-label">High / Critical</div><div class="kpi-value">${high}</div></div><div class="kpi k-saffron"><div class="kpi-label">Pending Approvals</div><div class="kpi-value">${pendingApprovals()}</div></div><div class="kpi"><div class="kpi-label">Open Obligations</div><div class="kpi-value">${S.obligations.filter(o=>o.status!=='Compliant').length}</div></div></div>
+  <div class="gov-card-grid">${rows.map(({c,score})=>{const drivers=[]; if(c.variations.some(v=>v.status==='Pending'))drivers.push('Pending variation'); if(c.milestones.some(m=>m.payment&&m.payment.status!=='Paid'))drivers.push('Payment gate'); const obs=S.obligations.filter(o=>o.contractId===c.id&&o.status!=='Compliant').length; if(obs)drivers.push(obs+' open obligation(s)'); return `<div class="gov-card"><div class="gov-card-top"><div><div class="gov-card-title">${esc(c.number)}</div><div class="gov-card-meta">${esc(c.contractor)}</div></div>${riskPill(score)}</div><div class="gov-card-copy">${esc(c.name)}</div><div class="prog-wrap" style="margin-top:10px"><div class="prog"><i style="width:${score}%"></i></div><span class="prog-pct">${score}</span></div><div class="gov-card-copy">${esc(drivers.join(', ')||'No major driver')}</div><div class="gov-actions"><button class="btn btn-ghost btn-sm" onclick="App.go('contract','${c.id}')">Open Contract</button></div></div>`;}).join('')}</div>`;
+}
+function vTemplates(){
+  return `<div class="page-head"><div><div class="crumb">Governance / Templates</div><div class="page-title">Templates & Clause Library</div><div class="page-sub">Controlled authoring assets for future backend-driven contract generation.</div></div></div>
+  <div class="grid-2"><div class="panel"><div class="panel-head"><div class="panel-title">Templates</div></div><div class="panel-body">${S.templates.map(t=>`<div class="doc-row"><div class="doc-ic">TP</div><div style="flex:1"><div class="doc-name">${esc(t.name)}</div><div class="doc-meta">${esc(t.type)} | ${esc(t.owner)} | ${esc(t.version)}</div></div>${pill(t.status,{'Approved':'p-green','Under Review':'p-amber'})}</div>`).join('')}</div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Clause Bank</div></div><div class="panel-body">${S.clauses.map(c=>`<div class="doc-row"><div class="doc-ic">CL</div><div style="flex:1"><div class="doc-name">${esc(c.title)}</div><div class="doc-meta">${esc(c.owner)} | ${esc(c.risk)} risk</div><div class="td-sub">${esc(c.text)}</div></div>${pill(c.approved?'Approved':'Review',{'Approved':'p-green','Review':'p-amber'})}</div>`).join('')}</div></div></div>`;
+}
+function vBudgets(){
+  const totalApproved = S.budgets.reduce((s,b)=>s+b.approved,0), totalCommitted=S.budgets.reduce((s,b)=>s+b.committed,0), totalPaid=S.budgets.reduce((s,b)=>s+b.paid,0);
+  return `<div class="page-head"><div><div class="crumb">Governance / Budgets</div><div class="page-title">Procurement & Budget Control</div><div class="page-sub">Budget ownership, committed exposure, paid value and remaining headroom.</div></div></div>
+  <div class="kpi-row"><div class="kpi"><div class="kpi-label">Approved</div><div class="kpi-value">${fmtUGX(totalApproved).replace('UGX ','')}</div></div><div class="kpi k-violet"><div class="kpi-label">Committed</div><div class="kpi-value">${fmtUGX(totalCommitted).replace('UGX ','')}</div></div><div class="kpi k-green"><div class="kpi-label">Paid</div><div class="kpi-value">${fmtUGX(totalPaid).replace('UGX ','')}</div></div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Budget Lines</div></div><div class="table-wrap"><table class="gov-table"><thead><tr><th>Budget Line</th><th>Owner</th><th>Approved</th><th>Committed</th><th>Headroom</th></tr></thead><tbody>${S.budgets.map(b=>`<tr><td><div class="b">${esc(b.name)}</div><div class="td-sub mono">${esc(b.code)}</div></td><td>${esc(b.owner)}</td><td class="mono">${fmtUGX(b.approved)}</td><td><div class="mono">${fmtUGX(b.committed)}</div><div class="td-sub">Paid: ${fmtUGX(b.paid)}</div></td><td class="mono">${fmtUGX(b.approved-b.committed)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function vCloseout(){
+  return `<div class="page-head"><div><div class="crumb">Governance / Closeout</div><div class="page-title">Execution & Closeout Control</div><div class="page-sub">Execution tracking and archive-readiness without crowding the contract register.</div></div></div>
+  <div class="grid-2"><div class="panel"><div class="panel-head"><div class="panel-title">Execution Tracker</div></div><div class="panel-body">${S.contracts.map(c=>{const e=S.execution[c.id], pct=Math.round(e.stage/e.steps.length*100); return `<div class="doc-row"><div class="doc-ic">EX</div><div style="flex:1"><div class="doc-name">${esc(c.number)} - ${esc(c.name)}</div><div class="doc-meta">${esc(e.steps[Math.min(e.stage,e.steps.length-1)])} | Executed: ${esc(e.executionDate||'Pending')}</div><div class="prog-wrap" style="margin-top:8px"><div class="prog"><i style="width:${pct}%"></i></div><span class="prog-pct">${pct}%</span></div></div><button class="btn btn-ghost btn-sm" onclick="App.advanceExecution('${c.id}')">Advance</button></div>`;}).join('')}</div></div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Closeout Gate</div></div><div class="panel-body">${S.contracts.map(c=>{const x=S.closeouts[c.id]; const done=[x.finalAccount,x.retentionDecision,x.defectsLiability,x.documentsComplete,x.finalReport].filter(Boolean).length; return `<div class="doc-row"><div class="doc-ic">CO</div><div style="flex:1"><div class="doc-name">${esc(c.number)} - ${esc(c.name)}</div><div class="doc-meta">${done}/5 gates complete | Open variations: ${x.unresolvedVariations}</div>${pill(x.status,{'Ready for Archive':'p-green','Closed':'p-green','Open':'p-blue'})}</div><button class="btn btn-green btn-sm" onclick="App.completeCloseout('${c.id}')">Closeout</button></div>`;}).join('')}</div></div></div>`;
+}
+function openNewRequest(){
+  openModal(modalShell('New Contract Request', `<div class="f-grid"><div class="f-field"><label>Request No.</label><input id="rqNo" value="REQ-2026-${String(20+S.requests.length).padStart(3,'0')}"></div><div class="f-field"><label>Department</label><input id="rqDept" value="Infrastructure & Estates"></div><div class="f-field full"><label>Title</label><input id="rqTitle" placeholder="e.g. Drying yard shade structure"></div><div class="f-field"><label>Supplier / Contractor</label><input id="rqSupplier" placeholder="Preferred or proposed supplier"></div><div class="f-field"><label>Estimated Value</label><input id="rqEstimate" type="number" value="75000000"></div><div class="f-field"><label>Procurement Method</label><select id="rqProc"><option>Open Domestic Bidding</option><option>Restricted Bidding</option><option>Direct Procurement</option><option>Framework Call-off</option></select></div><div class="f-field"><label>Budget Code</label><input id="rqBudget" value="CAPEX-ACP-INF-NEW"></div><div class="f-field"><label>Urgency</label><select id="rqUrg"><option>Medium</option><option>High</option><option>Low</option></select></div><div class="f-field full"><label>Justification</label><textarea id="rqJust" placeholder="Why this contract is needed"></textarea></div></div>`, `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button><button class="btn btn-primary" onclick="App.saveNewRequest()">Save Request</button>`), true);
+}
+function saveNewRequest(){
+  const r={id:uid('REQ'), no:$('rqNo').value.trim(), title:$('rqTitle').value.trim(), department:$('rqDept').value.trim(), requester:USERS[S.currentRole].name, type:'Works - Civil Engineering', procurementMethod:$('rqProc').value, supplier:$('rqSupplier').value.trim(), estimate:Number($('rqEstimate').value)||0, budgetCode:$('rqBudget').value.trim(), urgency:$('rqUrg').value, status:'Pending Approval', stage:0, approvals:[{step:'Project Manager',by:null,date:null},{step:'Department Head',by:null,date:null},{step:'Finance',by:null,date:null},{step:'Management',by:null,date:null}], justification:$('rqJust').value.trim(), docs:[], linkedContract:null};
+  if(!r.title||!r.supplier||!r.estimate){ toast('Enter a title, supplier and estimate.'); return; }
+  S.requests.unshift(r); notify('pm','IN','New contract request submitted: '+r.title); recordEvent('request.created', r); save(); closeModal(); toast('Request submitted.'); render();
+}
+function approveRequest(id){ const r=S.requests.find(x=>x.id===id); if(!r)return; const a=r.approvals[r.stage]; if(a){a.by=USERS[S.currentRole].name; a.date=fmtDate(today()); r.stage++;} if(r.stage>=r.approvals.length) r.status='Approved'; recordEvent('request.approved_step', { id:r.id, status:r.status, stage:r.stage }); save(); toast(r.status==='Approved'?'Request approved.':'Approval step recorded.'); render(); }
+function convertRequest(id){ const r=S.requests.find(x=>x.id===id); if(!r||r.linkedContract)return; const c={id:uid('CT'), number:'IAG/DRF/2026/'+String(40+S.contracts.length), name:r.title, contractor:r.supplier, contractorContact:'-', type:r.type, startDate:today(), endDate:addDays(today(),180), location:'Africa Coffee Park, Ntungamo', pm:USERS.pm.name, department:r.department, value:r.estimate, retention:5, status:'Draft', documents:r.docs||[], milestones:[], variations:[], activity:[{date:nowStr(),actor:USERS[S.currentRole].name,action:'Draft contract created from request '+r.no}]}; S.contracts.unshift(c); r.linkedContract=c.id; r.status='Converted'; ensureGovernance(); recordEvent('request.converted_to_contract', { requestId:r.id, contractId:c.id }); save(); toast('Draft contract created from approved request.'); go('contract',c.id); }
+function cycleObligation(id){ const o=S.obligations.find(x=>x.id===id); if(!o)return; const seq=['Open','Due Soon','Overdue','Compliant','Waived']; o.status=seq[(seq.indexOf(o.status)+1)%seq.length]; recordEvent('obligation.status_changed', { id:o.id, status:o.status }); save(); toast('Obligation status updated to '+o.status+'.'); render(); }
+function advanceExecution(cid){ const e=S.execution[cid], c=findContract(cid); if(!e||!c)return; if(e.stage<e.steps.length)e.stage++; if(e.stage>=e.steps.length){e.executionDate=today(); c.status=c.status==='Draft'||c.status==='Under Review'?'Active':c.status;} recordEvent('execution.advanced', { contractId:cid, stage:e.stage }); save(); toast('Execution tracker advanced.'); render(); }
+function completeCloseout(cid){ const x=S.closeouts[cid], c=findContract(cid); if(!x||!c)return; x.finalAccount=true; x.retentionDecision=true; x.defectsLiability=true; x.documentsComplete=true; x.unresolvedVariations=c.variations.filter(v=>v.status==='Pending').length; x.finalReport=true; x.status=x.unresolvedVariations?'Open':'Closed'; if(x.status==='Closed') c.status='Closed'; recordEvent('closeout.updated', { contractId:cid, status:x.status }); save(); toast(x.status==='Closed'?'Contract closed and ready for archive.':'Closeout updated; resolve open variations.'); render(); }
+/* ---------------- CONTRACTS LIST ---------------- */
+function vContracts(){
+  return `
+  <div class="page-head">
+    <div>
+      <div class="crumb">Workspace / Contracts</div>
+      <div class="page-title">Contracts Register</div>
+      <div class="page-sub">Master record of all works, supply and service contracts</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input class="search-input" placeholder="Search contractsâ€¦" oninput="App.filterContracts(this.value)">
+      ${can('createContract')?'<button class="btn btn-primary" onclick="App.openNewContract()">ï¼‹ New Contract</button>':''}
+    </div>
+  </div>
+  <div class="panel"><table>
+    <thead><tr><th>Contract No.</th><th>Contract</th><th>Contractor</th><th>PM</th><th>Value</th><th>Milestones</th><th>Progress</th><th>Status</th></tr></thead>
+    <tbody id="contractsTbody">${contractRows(S.contracts)}</tbody>
+  </table></div>`;
+}
+function contractRows(list){
+  if(!list.length) return '<tr><td colspan="8"><div class="empty"><div class="e-ic">â–¤</div>No contracts match.</div></td></tr>';
+  return list.map(c=>`<tr class="row-click" onclick="App.go('contract','${c.id}')">
+    <td class="mono">${esc(c.number)}</td>
+    <td><div class="b">${esc(c.name)}</div><div class="td-sub">${esc(c.type)} Â· ${esc(c.location)}</div></td>
+    <td>${esc(c.contractor)}</td>
+    <td>${esc(c.pm)}</td>
+    <td class="mono">${fmtUGX(contractValue(c))}</td>
+    <td class="mono">${approvedCount(c)}/${c.milestones.length}</td>
+    <td><div class="prog-wrap"><div class="prog"><i style="width:${progress(c)}%"></i></div><span class="prog-pct">${progress(c)}%</span></div></td>
+    <td>${pill(c.status, CT_STATUS_PILL)}</td></tr>`).join('');
+}
+function filterContracts(q){
+  q=(q||'').toLowerCase();
+  const list = S.contracts.filter(c=>(c.name+c.number+c.contractor+c.pm+c.status).toLowerCase().includes(q));
+  $('contractsTbody').innerHTML = contractRows(list);
+}
+
+/* ---------------- CONTRACT DETAIL ---------------- */
+function vContract(id, tab){
+  const c = findContract(id); if(!c) return '<div class="empty">Contract not found.</div>';
+  const cv = contractValue(c), paid = paidAmount(c);
+  const tabs = [
+    ['overview','Overview',null],['milestones','Milestones',c.milestones.length],['documents','Documents',c.documents.length],
+    ['variations','Variations',c.variations.length],['payments','Payments',c.milestones.filter(m=>m.payment).length],
+    ['reports','Reports',c.milestones.filter(m=>m.completionReport).length],['activity','Activity Log',c.activity.length]
+  ];
+  return `
+  <div class="crumb"><a onclick="App.go('contracts')">Contracts</a> / ${esc(c.number)}</div>
+  <div class="hero">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;position:relative;z-index:1">
+      <div>
+        <div class="h-sub">${esc(c.number)} Â· ${esc(c.type)}</div>
+        <h2>${esc(c.name)}</h2>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">${pill(c.status,CT_STATUS_PILL)}
+      ${can('editContract')?`<button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff" onclick="App.openStatusModal('${c.id}')">Change status</button>`:''}</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hk">Contract Value</div><div class="hv sf">${fmtUGX(cv)}</div></div>
+      <div class="hstat"><div class="hk">Contractor</div><div class="hv" style="font-size:14px;font-family:var(--font);font-weight:600">${esc(c.contractor)}</div></div>
+      <div class="hstat"><div class="hk">Project Manager</div><div class="hv" style="font-size:14px;font-family:var(--font);font-weight:600">${esc(c.pm)}</div></div>
+      <div class="hstat"><div class="hk">Progress</div><div class="hv">${progress(c)}%</div></div>
+      <div class="hstat"><div class="hk">Milestones</div><div class="hv">${approvedCount(c)}/${c.milestones.length} <span style="font-size:11px;opacity:.7">completed</span></div></div>
+      <div class="hstat"><div class="hk">Payments Released</div><div class="hv">${fmtUGX(paid)}</div></div>
+      <div class="hstat"><div class="hk">Outstanding</div><div class="hv">${fmtUGX(cv-paid)}</div></div>
+    </div>
+  </div>
+  <div class="tabs">${tabs.map(t=>`<div class="tab ${tab===t[0]?'active':''}" onclick="App.go('contract','${c.id}','${t[0]}')">${t[1]}${t[2]!=null?'<span class="cnt">'+t[2]+'</span>':''}</div>`).join('')}</div>
+  ${ {overview:tabOverview, milestones:tabMilestones, documents:tabDocuments, variations:tabVariations, payments:tabPayments, reports:tabReports, activity:tabActivity}[tab](c) }`;
+}
+
+function tabOverview(c){
+  return `
+  <div class="panel"><div class="panel-head"><div class="panel-title">Contract Information</div></div>
+  <div class="panel-body"><div class="info-grid">
+    <div class="info-item"><div class="k">Contract Number</div><div class="v mono">${esc(c.number)}</div></div>
+    <div class="info-item"><div class="k">Contract Type</div><div class="v">${esc(c.type)}</div></div>
+    <div class="info-item"><div class="k">Start Date</div><div class="v">${fmtDate(c.startDate)}</div></div>
+    <div class="info-item"><div class="k">End Date</div><div class="v">${fmtDate(c.endDate)}</div></div>
+    <div class="info-item"><div class="k">Project Location</div><div class="v">${esc(c.location)}</div></div>
+    <div class="info-item"><div class="k">Department</div><div class="v">${esc(c.department)}</div></div>
+    <div class="info-item"><div class="k">Original Value</div><div class="v big">${fmtUGX(c.value)}</div></div>
+    <div class="info-item"><div class="k">Approved Variations</div><div class="v big">${fmtUGX(contractValue(c)-c.value)}</div></div>
+    <div class="info-item"><div class="k">Retention</div><div class="v big">${c.retention}%</div></div>
+    <div class="info-item" style="grid-column:span 2"><div class="k">Contractor Contact</div><div class="v">${esc(c.contractorContact)}</div></div>
+  </div></div></div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-head"><div class="panel-title">Milestone Value Distribution</div></div>
+      <div class="panel-body">${c.milestones.map(m=>{const done=['Approved','Paid','Completed'].includes(m.status);return `
+        <div class="bar-row"><div class="bar-lbl">${esc(m.name)}</div>
+        <div class="bar-track"><div class="bar-fill ${done?'':'sf'}" style="width:${Math.max(m.value/Math.max(...c.milestones.map(x=>x.value))*100,8)}%">${fmtUGX(m.value)}</div></div>
+        <div class="bar-val">${esc(m.status)}</div></div>`;}).join('')||'<div class="empty">No milestones defined.</div>'}</div></div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Recent Activity</div><button class="btn btn-ghost btn-sm" onclick="App.go('contract','${c.id}','activity')">Full log â†’</button></div>
+      <div class="panel-body" style="padding-top:12px">${c.activity.slice(0,6).map(a=>`
+        <div style="display:flex;gap:11px;padding:9px 0;border-bottom:1px dotted var(--line)">
+          <div class="mono" style="font-size:10px;color:var(--text-2);min-width:110px;padding-top:2px">${esc(a.date)}</div>
+          <div style="font-size:12.5px"><b>${esc(a.actor)}</b> - ${esc(a.action)}</div></div>`).join('')}</div></div>
+  </div>`;
+}
+
+function tabMilestones(c){
+  return `
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Milestone Schedule</div>
+    ${can('addMilestone')?`<button class="btn btn-primary btn-sm" onclick="App.openNewMilestone('${c.id}')">ï¼‹ Add Milestone</button>`:''}</div>
+    ${c.milestones.map((m,i)=>{
+      const done=['Approved','Paid','Completed'].includes(m.status);
+      const chkDone = m.checklist.filter(x=>x.done).length;
+      return `<div class="ms-card" onclick="App.go('milestone','${c.id}','${m.id}')">
+        <div class="ms-num ${done?'done':(m.status!=='Pending'?'active':'')}">${done?'âœ“':String(i+1).padStart(2,'0')}</div>
+        <div><div class="ms-name">${esc(m.name)}</div>
+          <div class="ms-meta">Target ${fmtDate(m.targetDate)} Â· Checklist ${chkDone}/${m.checklist.length} Â· ${m.docs.length} document${m.docs.length===1?'':'s'}</div></div>
+        <div class="ms-amt">${fmtUGX(m.value)}</div>
+        <div>${pill(m.status, MS_STATUS_PILL)}</div>
+        <div style="color:var(--text-2)">â€º</div>
+      </div>`;}).join('')||'<div class="empty"><div class="e-ic">â—ˆ</div>No milestones yet.</div>'}
+  </div>`;
+}
+
+function tabDocuments(c){
+  return `
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Contract Document Repository</div>
+    ${can('uploadDoc')?`<button class="btn btn-primary btn-sm" onclick="App.openUpload('${c.id}',null)">â†‘ Upload Document</button>`:''}</div>
+    <div class="panel-body">
+    ${c.documents.map(d=>{const [cls,ic]=docIcon(d.name);return `
+      <div class="doc-row"><div class="doc-ic ${cls}">${ic}</div>
+        <div><div class="doc-name">${esc(d.name)}</div>
+        <div class="doc-meta">${esc(d.cat||'General')} Â· ${esc(d.size)} Â· by ${esc(d.uploadedBy)} Â· ${esc(d.date)}</div></div>
+        <div class="doc-actions"><span class="doc-ver">v${d.version}</span>
+          <button class="btn btn-ghost btn-sm" onclick="App.toastDl('${esc(d.name)}')">â†“ Download</button>
+          ${can('uploadDoc')?`<button class="btn btn-ghost btn-sm" onclick="App.newVersion('${c.id}',null,'${d.id}')">New version</button>`:''}</div>
+      </div>`;}).join('')||'<div class="empty"><div class="e-ic">ðŸ“Ž</div>No documents uploaded.</div>'}
+    </div>
+  </div>`;
+}
+
+function tabVariations(c){
+  return `
+  ${can('createVariation')?`<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn btn-primary" onclick="App.openNewVariation('${c.id}')">ï¼‹ Create Variation</button></div>`:''}
+  <div class="panel"><div class="panel-head"><div class="panel-title">Variation Register</div></div>
+  <table><thead><tr><th>No.</th><th>Variation</th><th>Amount</th><th>Time Impact</th><th>Approval Stage</th><th>Status</th><th></th></tr></thead><tbody>
+  ${c.variations.map(v=>`<tr>
+    <td class="mono">${esc(v.number)}</td>
+    <td><div class="b">${esc(v.title)}</div><div class="td-sub">${esc(v.description)}</div></td>
+    <td class="mono">+${fmtUGX(v.amount)}</td>
+    <td class="mono">${v.extensionDays?'+'+v.extensionDays+' days':'-'}</td>
+    <td><span class="mono" style="font-size:11px">${v.status==='Approved'?'Fully approved':v.status==='Rejected'?'Rejected':'At: '+VAR_STAGES[Math.min(v.stage,3)]}</span></td>
+    <td>${pill(v.status, {'Approved':'p-green','Pending':'p-amber','Rejected':'p-red'})}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="App.openVariation('${c.id}','${v.id}')">Open</button></td>
+  </tr>`).join('')||'<tr><td colspan="7"><div class="empty"><div class="e-ic">Â±</div>No variations raised on this contract.</div></td></tr>'}
+  </tbody></table></div>`;
+}
+
+function tabPayments(c){
+  const pays = c.milestones.filter(m=>m.payment);
+  const released = paidAmount(c);
+  const retained = pays.filter(m=>m.payment.status==='Paid').reduce((s,m)=>s+(m.payment.amount-m.payment.payable),0);
+  return `
+  <div class="kpi-row">
+    <div class="kpi k-green"><div class="kpi-label">Released</div><div class="kpi-value">${fmtUGX(released).replace('UGX ','')}</div></div>
+    <div class="kpi k-saffron"><div class="kpi-label">In Workflow</div><div class="kpi-value">${fmtUGX(pays.filter(m=>m.payment.status!=='Paid').reduce((s,m)=>s+m.payment.payable,0)).replace('UGX ','')}</div></div>
+    <div class="kpi"><div class="kpi-label">Retention Held</div><div class="kpi-value">${fmtUGX(retained).replace('UGX ','')}</div><div class="kpi-trend">${c.retention}% per certificate</div></div>
+    <div class="kpi k-red"><div class="kpi-label">Outstanding</div><div class="kpi-value">${fmtUGX(contractValue(c)-released).replace('UGX ','')}</div></div>
+  </div>
+  <div class="panel"><div class="panel-head"><div class="panel-title">Payment Requests</div></div>
+  ${pays.map(m=>{const p=m.payment;return `
+    <div style="padding:16px 18px;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center">
+        <div><div class="b" style="font-size:14px">${esc(p.id)} - ${esc(m.name)}</div>
+          <div class="td-sub mono">Gross ${fmtFull(p.amount)} Â· Retention ${p.retention}% Â· <b style="color:var(--navy-deep)">Payable ${fmtFull(p.payable)}</b></div></div>
+        <div style="display:flex;gap:8px;align-items:center">${pill(p.status, {'Paid':'p-green','PM Approval':'p-amber','Finance Review':'p-blue','Payment Authorization':'p-violet'})}
+        ${payActionBtn(c,m)}</div>
+      </div>
+      <div class="stepper">${PAY_STAGES.map((s,i)=>{
+        const h = p.history[i];
+        const done = i < p.stage; const curr = i===p.stage && p.status!=='Paid';
+        return `<div class="step ${done?'done':''} ${curr?'curr':''}"><div class="step-dot">${done?'âœ“':i+1}</div>
+          <div class="step-lbl">${s}${h&&h.by?'<br><span style="font-weight:400;color:var(--text-2)">'+esc(h.by)+' Â· '+esc(h.date)+'</span>':''}</div></div>`;
+      }).join('')}</div>
+    </div>`;}).join('')||'<div class="empty"><div class="e-ic">â‚£</div>No payment requests yet. Payments are created automatically when milestones are approved.</div>'}
+  </div>`;
+}
+
+function payActionBtn(c,m){
+  const p=m.payment;
+  if (p.status==='Paid') return '';
+  if (p.stage===0 && can('pmApprovePayment')) return `<button class="btn btn-saffron btn-sm" onclick="App.advancePayment('${c.id}','${m.id}')">Approve (PM)</button>`;
+  if (p.stage===1 && can('financeReview')) return `<button class="btn btn-saffron btn-sm" onclick="App.advancePayment('${c.id}','${m.id}')">Complete Finance Review</button>`;
+  if (p.stage===2 && can('authorizePayment')) return `<button class="btn btn-saffron btn-sm" onclick="App.advancePayment('${c.id}','${m.id}')">Authorize Payment</button>`;
+  if (p.stage===3 && can('markPaid')) return `<button class="btn btn-green btn-sm" onclick="App.advancePayment('${c.id}','${m.id}')">Mark as Paid</button>`;
+  return `<span class="mono" style="font-size:10px;color:var(--text-2)">awaiting ${esc(PAY_STAGES[p.stage])}</span>`;
+}
+
+function tabReports(c){
+  const reports = c.milestones.filter(m=>m.completionReport);
+  return `
+  <div class="panel"><div class="panel-head"><div class="panel-title">Completion Reports</div></div>
+  <div class="panel-body">
+  ${reports.map(m=>`
+    <div class="doc-row"><div class="doc-ic pdf">ðŸ“„</div>
+      <div><div class="doc-name">Milestone Completion Report - ${esc(m.name)}</div>
+      <div class="doc-meta mono">${esc(m.completionReport.no)} Â· Generated ${esc(m.completionReport.date)} Â· ${fmtUGX(m.value)}</div></div>
+      <div class="doc-actions"><span class="pill p-green">Approved</span>
+      <button class="btn btn-primary btn-sm" onclick="App.openReport('${c.id}','${m.id}')">View / Print</button></div>
+    </div>`).join('')||'<div class="empty"><div class="e-ic">â–¦</div>No completion reports yet. Reports are generated automatically on milestone approval.</div>'}
+  </div></div>`;
+}
+
+function tabActivity(c){
+  return `
+  <div class="panel"><div class="panel-head"><div class="panel-title">Activity Log - Full Audit Trail</div></div>
+  <table><thead><tr><th style="width:170px">Timestamp</th><th style="width:160px">Actor</th><th>Action</th></tr></thead><tbody>
+  ${c.activity.map(a=>`<tr><td class="mono" style="font-size:11px">${esc(a.date)}</td><td class="b">${esc(a.actor)}</td><td>${esc(a.action)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+/* ---------------- GLOBAL REGISTERS ---------------- */
+function vAllMilestones(){
+  const rows=[];
+  S.contracts.forEach(c=>c.milestones.forEach(m=>rows.push({c,m})));
+  return `
+  <div class="page-head"><div><div class="crumb">Workspace / Milestones</div><div class="page-title">Milestone Register</div>
+  <div class="page-sub">All milestones across the contract portfolio</div></div></div>
+  <div class="panel"><table><thead><tr><th>Milestone</th><th>Contract</th><th>Value</th><th>Target</th><th>Checklist</th><th>Status</th></tr></thead><tbody>
+  ${rows.map(({c,m})=>`<tr class="row-click" onclick="App.go('milestone','${c.id}','${m.id}')">
+    <td class="b">${esc(m.name)}</td><td><div>${esc(c.name)}</div><div class="td-sub mono">${esc(c.number)}</div></td>
+    <td class="mono">${fmtUGX(m.value)}</td><td class="mono">${fmtDate(m.targetDate)}</td>
+    <td class="mono">${m.checklist.filter(x=>x.done).length}/${m.checklist.length}</td>
+    <td>${pill(m.status,MS_STATUS_PILL)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function vAllPayments(){
+  const rows=[];
+  S.contracts.forEach(c=>c.milestones.forEach(m=>{if(m.payment)rows.push({c,m})}));
+  return `
+  <div class="page-head"><div><div class="crumb">Workspace / Payments</div><div class="page-title">Payment Pipeline</div>
+  <div class="page-sub">All payment requests across contracts - milestone-triggered, retention-adjusted</div></div></div>
+  <div class="panel"><table><thead><tr><th>Payment ID</th><th>Milestone / Contract</th><th>Gross</th><th>Retention</th><th>Payable</th><th>Stage</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.map(({c,m})=>{const p=m.payment;return `<tr>
+    <td class="mono">${esc(p.id)}</td>
+    <td><div class="b">${esc(m.name)}</div><div class="td-sub">${esc(c.name)}</div></td>
+    <td class="mono">${fmtUGX(p.amount)}</td><td class="mono">${p.retention}%</td>
+    <td class="mono b">${fmtUGX(p.payable)}</td>
+    <td class="mono" style="font-size:11px">${p.status==='Paid'?'Complete':PAY_STAGES[p.stage]}</td>
+    <td>${pill(p.status,{'Paid':'p-green','PM Approval':'p-amber','Finance Review':'p-blue','Payment Authorization':'p-violet'})}</td>
+    <td>${payActionBtn(c,m)||'<button class="btn btn-ghost btn-sm" onclick="App.go(\'contract\',\''+c.id+'\',\'payments\')">Open</button>'}</td></tr>`;}).join('')||'<tr><td colspan="8"><div class="empty">No payment requests yet.</div></td></tr>'}
+  </tbody></table></div>`;
+}
+
+function vAllVariations(){
+  const rows=[];
+  S.contracts.forEach(c=>c.variations.forEach(v=>rows.push({c,v})));
+  return `
+  <div class="page-head"><div><div class="crumb">Workspace / Variations</div><div class="page-title">Variation Register</div>
+  <div class="page-sub">Scope, cost and schedule changes across all contracts</div></div></div>
+  <div class="panel"><table><thead><tr><th>No.</th><th>Variation / Contract</th><th>Amount</th><th>Time</th><th>Workflow</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.map(({c,v})=>`<tr>
+    <td class="mono">${esc(v.number)}</td>
+    <td><div class="b">${esc(v.title)}</div><div class="td-sub">${esc(c.name)}</div></td>
+    <td class="mono">+${fmtUGX(v.amount)}</td><td class="mono">${v.extensionDays?'+'+v.extensionDays+'d':'-'}</td>
+    <td class="mono" style="font-size:11px">${v.status==='Approved'?'Complete':v.status==='Rejected'?'-':VAR_STAGES[Math.min(v.stage,3)]}</td>
+    <td>${pill(v.status,{'Approved':'p-green','Pending':'p-amber','Rejected':'p-red'})}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="App.openVariation('${c.id}','${v.id}')">Open</button></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty">No variations raised.</div></td></tr>'}
+  </tbody></table></div>`;
+}
+
+/* ---------------- REPORTS MODULE ---------------- */
+function vReports(sub){
+  const tabs=[['contracts','Contract Reports'],['financial','Financial Reports'],['milestones','Milestone Reports'],['contractors','Contractor Performance']];
+  let body='';
+  if (sub==='contracts'){
+    const exp = S.contracts.filter(c=>{const d=(new Date(c.endDate)-new Date())/864e5; return d>0&&d<120&&c.status==='Active';});
+    body = `
+    <div class="grid-3">
+      ${repPanel('Active Contracts', S.contracts.filter(c=>c.status==='Active'), c=>fmtUGX(contractValue(c)))}
+      ${repPanel('Completed / Closed', S.contracts.filter(c=>['Completed','Closed'].includes(c.status)), c=>fmtUGX(contractValue(c)))}
+      ${repPanel('Expiring within 120 days', exp, c=>'Ends '+fmtDate(c.endDate))}
+    </div>`;
+  } else if (sub==='financial'){
+    const totRet = S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>m.payment&&m.payment.status==='Paid').reduce((x,m)=>x+(m.payment.amount-m.payment.payable),0),0);
+    body = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Total Committed</div><div class="kpi-value">${fmtUGX(S.contracts.reduce((s,c)=>s+contractValue(c),0)).replace('UGX ','')}</div></div>
+      <div class="kpi k-green"><div class="kpi-label">Total Paid</div><div class="kpi-value">${fmtUGX(S.contracts.reduce((s,c)=>s+paidAmount(c),0)).replace('UGX ','')}</div></div>
+      <div class="kpi k-saffron"><div class="kpi-label">Retention Balances</div><div class="kpi-value">${fmtUGX(totRet).replace('UGX ','')}</div></div>
+      <div class="kpi k-red"><div class="kpi-label">Outstanding Payments</div><div class="kpi-value">${S.contracts.reduce((s,c)=>s+c.milestones.filter(m=>m.payment&&m.payment.status!=='Paid').length,0)}</div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Budget vs Paid by Contract</div></div>
+    <table><thead><tr><th>Contract</th><th>Committed</th><th>Paid</th><th>Retention Held</th><th>Outstanding</th><th>% Utilised</th></tr></thead><tbody>
+    ${S.contracts.map(c=>{const cv=contractValue(c),p=paidAmount(c);
+      const ret=c.milestones.filter(m=>m.payment&&m.payment.status==='Paid').reduce((s,m)=>s+(m.payment.amount-m.payment.payable),0);
+      return `<tr class="row-click" onclick="App.go('contract','${c.id}','payments')">
+      <td><div class="b">${esc(c.name)}</div><div class="td-sub mono">${esc(c.number)}</div></td>
+      <td class="mono">${fmtUGX(cv)}</td><td class="mono">${fmtUGX(p)}</td><td class="mono">${fmtUGX(ret)}</td>
+      <td class="mono">${fmtUGX(cv-p)}</td>
+      <td><div class="prog-wrap"><div class="prog"><i style="width:${cv?Math.round(p/cv*100):0}%"></i></div><span class="prog-pct">${cv?Math.round(p/cv*100):0}%</span></div></td></tr>`;}).join('')}
+    </tbody></table></div>`;
+  } else if (sub==='milestones'){
+    const all=[]; S.contracts.forEach(c=>c.milestones.forEach(m=>all.push({c,m})));
+    const overdue = all.filter(({m})=>!['Approved','Paid','Completed'].includes(m.status)&&new Date(m.targetDate)<new Date());
+    const upcoming = all.filter(({m})=>!['Approved','Paid','Completed'].includes(m.status)&&new Date(m.targetDate)>=new Date()).sort((a,b)=>new Date(a.m.targetDate)-new Date(b.m.targetDate)).slice(0,8);
+    const done = all.filter(({m})=>['Approved','Paid','Completed'].includes(m.status)).length;
+    body = `
+    <div class="kpi-row">
+      <div class="kpi k-red"><div class="kpi-label">Overdue Milestones</div><div class="kpi-value">${overdue.length}</div></div>
+      <div class="kpi k-saffron"><div class="kpi-label">Upcoming (open)</div><div class="kpi-value">${upcoming.length}</div></div>
+      <div class="kpi k-green"><div class="kpi-label">Completion Rate</div><div class="kpi-value">${all.length?Math.round(done/all.length*100):0}%</div><div class="kpi-trend">${done} of ${all.length} milestones</div></div>
+    </div>
+    <div class="grid-2">
+    <div class="panel"><div class="panel-head"><div class="panel-title">Overdue Milestones</div></div>
+    <table><tbody>${overdue.map(({c,m})=>`<tr class="row-click" onclick="App.go('milestone','${c.id}','${m.id}')">
+      <td><div class="b">${esc(m.name)}</div><div class="td-sub">${esc(c.name)}</div></td>
+      <td class="mono" style="color:var(--red)">${fmtDate(m.targetDate)}</td><td>${pill(m.status,MS_STATUS_PILL)}</td></tr>`).join('')||'<tr><td><div class="empty">No overdue milestones - portfolio on schedule.</div></td></tr>'}</tbody></table></div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Upcoming Milestones</div></div>
+    <table><tbody>${upcoming.map(({c,m})=>`<tr class="row-click" onclick="App.go('milestone','${c.id}','${m.id}')">
+      <td><div class="b">${esc(m.name)}</div><div class="td-sub">${esc(c.name)}</div></td>
+      <td class="mono">${fmtDate(m.targetDate)}</td><td class="mono">${fmtUGX(m.value)}</td></tr>`).join('')||'<tr><td><div class="empty">Nothing upcoming.</div></td></tr>'}</tbody></table></div>
+    </div>`;
+  } else {
+    const byCtr={};
+    S.contracts.forEach(c=>{
+      if(!byCtr[c.contractor]) byCtr[c.contractor]={contracts:0,value:0,ms:0,done:0,overdue:0,paid:0};
+      const b=byCtr[c.contractor]; b.contracts++; b.value+=contractValue(c); b.paid+=paidAmount(c);
+      c.milestones.forEach(m=>{b.ms++; if(['Approved','Paid','Completed'].includes(m.status))b.done++;
+        if(!['Approved','Paid','Completed'].includes(m.status)&&new Date(m.targetDate)<new Date())b.overdue++;});
+    });
+    body = `
+    <div class="panel"><div class="panel-head"><div class="panel-title">Contractor Performance Scorecard</div></div>
+    <table><thead><tr><th>Contractor</th><th>Contracts</th><th>Portfolio Value</th><th>Paid</th><th>Milestones Done</th><th>Overdue</th><th>Delivery Score</th></tr></thead><tbody>
+    ${Object.entries(byCtr).map(([k,b])=>{
+      const score = b.ms? Math.max(0, Math.round(b.done/b.ms*100) - b.overdue*10) : 0;
+      return `<tr><td class="b">${esc(k)}</td><td class="mono">${b.contracts}</td>
+      <td class="mono">${fmtUGX(b.value)}</td><td class="mono">${fmtUGX(b.paid)}</td>
+      <td class="mono">${b.done}/${b.ms}</td>
+      <td>${b.overdue?'<span class="pill p-red">'+b.overdue+'</span>':'<span class="pill p-green">0</span>'}</td>
+      <td><div class="prog-wrap"><div class="prog"><i style="width:${score}%"></i></div><span class="prog-pct">${score}</span></div></td></tr>`;}).join('')}
+    </tbody></table></div>`;
+  }
+  return `
+  <div class="page-head"><div><div class="crumb">Intelligence / Reports</div><div class="page-title">Reporting Module</div>
+  <div class="page-sub">Live portfolio analytics computed from contract data</div></div></div>
+  <div class="tabs">${tabs.map(t=>`<div class="tab ${sub===t[0]?'active':''}" onclick="App.go('reports','${t[0]}')">${t[1]}</div>`).join('')}</div>
+  ${body}`;
+}
+function repPanel(title, list, fn){
+  return `<div class="panel" style="margin-bottom:0"><div class="panel-head"><div class="panel-title">${title}</div><span class="pill p-navy">${list.length}</span></div>
+  <div class="panel-body" style="padding-top:10px">${list.map(c=>`
+    <div class="doc-row" style="cursor:pointer" onclick="App.go('contract','${c.id}')">
+      <div style="flex:1"><div class="doc-name">${esc(c.name)}</div><div class="doc-meta mono">${esc(c.number)} Â· ${esc(c.contractor)}</div></div>
+      <span class="mono" style="font-size:11px;color:var(--navy-deep)">${fn(c)}</span></div>`).join('')||'<div class="empty" style="padding:18px">None.</div>'}</div></div>`;
+}
+
+/* =====================================================================
+   MILESTONE DETAIL PAGE
+===================================================================== */
+function vMilestone(cid, mid){
+  const c = findContract(cid), m = findMilestone(cid, mid);
+  if(!m) return '<div class="empty">Milestone not found.</div>';
+  const chkDone = m.checklist.filter(x=>x.done).length;
+  const chkAll = chkDone === m.checklist.length && m.checklist.length>0;
+  const isDone = ['Approved','Paid','Completed'].includes(m.status);
+  const dlvDone = m.deliverables.filter(d=>d.done).length;
+
+  return `
+  <div class="crumb"><a onclick="App.go('contracts')">Contracts</a> / <a onclick="App.go('contract','${c.id}','milestones')">${esc(c.number)}</a> / Milestone</div>
+  <div class="hero" style="background:linear-gradient(120deg,#3d2a05 0%,var(--saffron-deep) 55%,var(--saffron) 130%)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;position:relative;z-index:1">
+      <div><div class="h-sub">${esc(c.name)} Â· ${esc(c.number)}</div><h2>${esc(m.name)}</h2></div>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+        ${pill(m.status, MS_STATUS_PILL)}
+        ${m.status==='In Progress'&&can('requestVerification')?`<button class="btn ${chkAll?'btn-saffron':'btn-ghost'}" style="${chkAll?'':'background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);color:#fff'}" ${chkAll?'':'disabled title="Complete the achievement checklist first"'} onclick="App.requestVerification('${c.id}','${m.id}')">âš‘ REQUEST VERIFICATION</button>`:''}
+        ${(m.status==='Verification Requested'||m.status==='Under Inspection')&&can('inspect')?`<button class="btn btn-saffron" onclick="App.openInspection('${c.id}','${m.id}')">ðŸ”Ž Open Inspection Form</button>`:''}
+        ${m.completionReport?`<button class="btn btn-ghost" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);color:#fff" onclick="App.openReport('${c.id}','${m.id}')">â–¦ Completion Report</button>`:''}
+        ${m.status==='Pending'&&can('approveMilestone')?`<button class="btn btn-ghost" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);color:#fff" onclick="App.startMilestone('${c.id}','${m.id}')">â–¶ Start Milestone</button>`:''}
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hk">Milestone Value</div><div class="hv">${fmtUGX(m.value)}</div></div>
+      <div class="hstat"><div class="hk">Target Completion</div><div class="hv" style="font-size:15px">${fmtDate(m.targetDate)}</div></div>
+      <div class="hstat"><div class="hk">Responsible Contractor</div><div class="hv" style="font-size:13.5px;font-family:var(--font);font-weight:600">${esc(c.contractor)}</div></div>
+      <div class="hstat"><div class="hk">Achievement Checklist</div><div class="hv">${chkDone}/${m.checklist.length}</div></div>
+      <div class="hstat"><div class="hk">Deliverables</div><div class="hv">${dlvDone}/${m.deliverables.length}</div></div>
+      <div class="hstat"><div class="hk">Retention on Payment</div><div class="hv">${c.retention}%</div></div>
+    </div>
+  </div>
+
+  ${m.status==='Verification Requested'?`<div class="lock-note">ðŸ”Ž <div><b>Verification requested.</b> The Project Manager has been notified and must complete a site inspection before this milestone can be approved.</div></div>`:''}
+  ${isDone?`<div class="lock-note ok-note">âœ“ <div><b>Milestone approved${m.payment?(' - payment '+m.payment.status.toLowerCase()):''}.</b> Completion report ${esc(m.completionReport?m.completionReport.no:'')} generated. Records are locked for audit.</div></div>`:''}
+
+  <div class="grid-2">
+    <div>
+      <!-- ACHIEVEMENT CHECKLIST ENGINE -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">âš™ Milestone Achievement Checklist</div>
+          <span class="pill ${chkAll?'p-green':'p-amber'}">${chkAll?'Complete':'Incomplete - approval locked'}</span></div>
+        <div class="panel-body" style="padding-top:14px">
+          ${!chkAll&&!isDone?`<div class="lock-note">ðŸ”’ <div>This milestone <b>cannot be approved</b> until every checklist item is complete. Each item must be evidenced and ticked by the contractor or PM.</div></div>`:''}
+          ${m.checklist.map((x,i)=>`
+            <div class="chk ${x.done?'done':''} ${isDone||!can('tickChecklist')?'locked':''}" onclick="${isDone||!can('tickChecklist')?'':`App.toggleChk('${c.id}','${m.id}',${i})`}">
+              <div class="chk-box">${x.done?'âœ“':''}</div>
+              <div class="chk-label">${esc(x.item)}</div>
+              ${x.done?`<div class="chk-by">${esc(x.by||'')} Â· ${esc(x.date||'')}</div>`:''}
+            </div>`).join('')||'<div class="empty">No checklist defined.</div>'}
+        </div>
+      </div>
+
+      <!-- SCOPE OF WORK -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Scope of Work</div></div>
+        <div class="panel-body" style="padding-top:14px">
+          ${m.scope.map((t,i)=>`
+          <div class="scope-task">
+            <div class="scope-num">${String(i+1).padStart(2,'0')}</div>
+            <div><div class="scope-name">${esc(t.task)}</div><div class="scope-desc">${esc(t.desc)}</div></div>
+            <div class="mono" style="font-size:11px;color:var(--text-2)">${fmtDate(t.target)}</div>
+            <div>${isDone||!can('markScope')?pill(t.status,{'Completed':'p-green','In Progress':'p-blue','Pending':'p-slate'}):
+              `<select onchange="App.setScope('${c.id}','${m.id}',${i},this.value)" style="border:1px solid var(--line);border-radius:8px;padding:4px 7px;font-size:11px;font-family:var(--font)">
+                ${['Pending','In Progress','Completed'].map(s=>'<option'+(s===t.status?' selected':'')+'>'+s+'</option>').join('')}</select>`}</div>
+          </div>`).join('')||'<div class="empty">No scope tasks.</div>'}
+        </div>
+      </div>
+
+      <!-- DELIVERABLES -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Required Deliverables</div></div>
+        <div class="panel-body" style="padding-top:14px">
+          ${m.deliverables.map((d,i)=>`
+          <div class="chk ${d.done?'done':''} ${isDone||!can('tickChecklist')?'locked':''}" onclick="${isDone||!can('tickChecklist')?'':`App.toggleDlv('${c.id}','${m.id}',${i})`}">
+            <div class="chk-box">${d.done?'âœ“':''}</div><div class="chk-label">${esc(d.name)}</div>
+          </div>`).join('')||'<div class="empty">No deliverables specified.</div>'}
+        </div>
+      </div>
+
+      ${m.inspection?`
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Site Inspection Record</div><span class="pill ${m.inspection.recommendation==='Approve'?'p-green':'p-red'}">${esc(m.inspection.recommendation)}</span></div>
+        <div class="panel-body"><div class="info-grid">
+          <div class="info-item"><div class="k">Inspection Date</div><div class="v">${fmtDate(m.inspection.date)}</div></div>
+          <div class="info-item"><div class="k">Inspector</div><div class="v">${esc(m.inspection.inspector)}</div></div>
+          <div class="info-item" style="grid-column:1/-1"><div class="k">Observations</div><div class="v" style="font-weight:400;line-height:1.5">${esc(m.inspection.observations)}</div></div>
+          <div class="info-item" style="grid-column:1/-1"><div class="k">Issues Found</div><div class="v" style="font-weight:400">${esc(m.inspection.issues||'None')}</div></div>
+        </div></div>
+      </div>`:''}
+    </div>
+
+    <div>
+      <!-- SUPPORTING DOCUMENTS -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Supporting Documents</div>
+        ${!isDone&&can('uploadDoc')?`<button class="btn btn-primary btn-sm" onclick="App.openUpload('${c.id}','${m.id}')">â†‘ Upload</button>`:''}</div>
+        <div class="panel-body" style="padding-top:14px">
+        ${m.docs.map(d=>{const ic=docIcon(d.name);return `
+          <div class="doc-row"><div class="doc-ic ${ic[0]}">${ic[1]}</div>
+            <div><div class="doc-name">${esc(d.name)}</div>
+            <div class="doc-meta">${esc(d.size)} Â· by ${esc(d.uploadedBy)} Â· ${esc(d.date)}</div></div>
+            <div class="doc-actions"><span class="doc-ver">v${d.version}</span>
+            <button class="btn btn-ghost btn-sm" onclick="App.toastDl('${esc(d.name)}')">â†“</button>
+            ${!isDone&&can('uploadDoc')?`<button class="btn btn-ghost btn-sm" title="Upload new version" onclick="App.newVersion('${c.id}','${m.id}','${d.id}')">v+</button>`:''}</div>
+          </div>`;}).join('')||'<div class="empty"><div class="e-ic">ðŸ“Ž</div>No evidence uploaded yet.<br><span style="font-size:11px">Photos, PDFs, drawings, test results, certificates, videos.</span></div>'}
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      ${m.payment?`
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Payment Request - ${esc(m.payment.id)}</div>${pill(m.payment.status,{'Paid':'p-green','PM Approval':'p-amber','Finance Review':'p-blue','Payment Authorization':'p-violet'})}</div>
+        <div class="panel-body">
+          <div class="var-impact" style="margin-bottom:14px">
+            <div><div class="vi-k">Gross Amount</div><div class="vi-v">${fmtUGX(m.payment.amount)}</div></div>
+            <div class="vi-arrow">âˆ’</div>
+            <div><div class="vi-k">Retention ${m.payment.retention}%</div><div class="vi-v">${fmtUGX(m.payment.amount-m.payment.payable)}</div></div>
+            <div class="vi-arrow">ï¼</div>
+            <div><div class="vi-k">Payable</div><div class="vi-v" style="color:var(--saffron-deep)">${fmtUGX(m.payment.payable)}</div></div>
+          </div>
+          <div class="stepper">${PAY_STAGES.map((s,i)=>{const h=m.payment.history[i];const done=i<m.payment.stage;const curr=i===m.payment.stage&&m.payment.status!=='Paid';
+            return `<div class="step ${done?'done':''} ${curr?'curr':''}"><div class="step-dot">${done?'âœ“':i+1}</div><div class="step-lbl">${s}${h&&h.by?'<br><span style="font-weight:400;color:var(--text-2)">'+esc(h.by)+'</span>':''}</div></div>`;}).join('')}</div>
+          <div style="text-align:right;margin-top:10px">${payActionBtn(c,m)}</div>
+        </div>
+      </div>`:''}
+
+      <!-- COMMENTS -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Comments &amp; Discussion</div><span class="pill p-slate">${m.comments.length} message${m.comments.length===1?'':'s'}</span></div>
+        <div class="panel-body" style="padding-top:14px">
+          ${m.comments.map(cm=>{const u=Object.values(USERS).find(x=>x.name===cm.author)||{col:'#64748b',av:cm.author.split(' ').map(w=>w[0]).join('').slice(0,2)};return `
+          <div class="cm"><div class="cm-av" style="background:${u.col}">${u.av}</div>
+            <div class="cm-bubble"><div class="cm-head"><span class="cm-name">${esc(cm.author)}</span><span class="cm-role">${esc(ROLE_NAMES[cm.role]||cm.role)}</span><span class="cm-time">${esc(cm.date)}</span></div>
+            <div class="cm-text">${esc(cm.text)}</div></div></div>`;}).join('')||'<div class="empty" style="padding:18px">No discussion yet.</div>'}
+          ${can('comment')?`<div class="cm-input">
+            <input id="cmInput" placeholder="Write a comment as ${esc(USERS[S.currentRole].name)}â€¦" onkeydown="if(event.key==='Enter')App.addComment('${c.id}','${m.id}')">
+            <button class="btn btn-primary" onclick="App.addComment('${c.id}','${m.id}')">Send</button></div>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   MODALS
+===================================================================== */
+function openModal(html, wide){ $('modalBox').className='modal'+(wide?' wide':''); $('modalBox').innerHTML=html; $('modalOverlay').classList.add('open'); }
+function closeModal(){ $('modalOverlay').classList.remove('open'); }
+
+function modalShell(title, body, foot){
+  return `<div class="modal-head"><div class="modal-title">${title}</div><button class="modal-x" onclick="App.closeModal()">âœ•</button></div>
+  <div class="modal-body">${body}</div>
+  ${foot?'<div class="modal-foot">'+foot+'</div>':''}`;
+}
+
+/* ---- New contract ---- */
+function openNewContract(){
+  openModal(modalShell('New Contract',
+  `<div class="f-grid">
+    <div class="f-field"><label>Contract Number</label><input id="ncNumber" placeholder="IAG/WRK/2026/0XX" value="IAG/WRK/2026/0${30+S.contracts.length}"></div>
+    <div class="f-field"><label>Contract Type</label><select id="ncType"><option>Works - Civil Engineering</option><option>Works - Building Construction</option><option>Supply &amp; Installation - Plant</option><option>Consultancy Services</option><option>Supply of Goods</option></select></div>
+    <div class="f-field full"><label>Contract Name</label><input id="ncName" placeholder="e.g. Drying Yard Expansion - Phase 2"></div>
+    <div class="f-field"><label>Contractor</label><input id="ncContractor" placeholder="Company name"></div>
+    <div class="f-field"><label>Contractor Contact</label><input id="ncContact" placeholder="Name Â· Phone Â· Email"></div>
+    <div class="f-field"><label>Start Date</label><input id="ncStart" type="date" value="${today()}"></div>
+    <div class="f-field"><label>End Date</label><input id="ncEnd" type="date" value="${addDays(today(),300)}"></div>
+    <div class="f-field"><label>Project Location</label><input id="ncLoc" value="Africa Coffee Park, Ntungamo"></div>
+    <div class="f-field"><label>Department</label><select id="ncDept"><option>Infrastructure &amp; Estates</option><option>Production Engineering</option><option>Quality &amp; Laboratory</option><option>Logistics &amp; Warehousing</option><option>ICT &amp; Digital</option></select></div>
+    <div class="f-field"><label>Project Manager</label><select id="ncPM"><option>John Doe</option><option>James Mukasa</option><option>Patricia Nalweyiso</option></select></div>
+    <div class="f-field"><label>Contract Value (UGX)</label><input id="ncValue" type="number" placeholder="850000000"></div>
+    <div class="f-field"><label>Retention %</label><input id="ncRet" type="number" value="5" min="0" max="20"></div>
+    <div class="f-field"><label>Initial Status</label><select id="ncStatus"><option>Draft</option><option>Under Review</option><option selected>Active</option></select></div>
+  </div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.saveNewContract()">Create Contract</button>`), true);
+}
+function saveNewContract(){
+  const name = $('ncName').value.trim(), ctr = $('ncContractor').value.trim(), val = Number($('ncValue').value);
+  if(!name||!ctr||!val){ toast('Contract name, contractor and value are required.'); return; }
+  const c = { id:uid('CT'), number:$('ncNumber').value.trim()||uid('IAG'), name, contractor:ctr,
+    contractorContact:$('ncContact').value.trim()||'-', type:$('ncType').value, startDate:$('ncStart').value, endDate:$('ncEnd').value,
+    location:$('ncLoc').value, pm:$('ncPM').value, department:$('ncDept').value, value:val,
+    retention:Number($('ncRet').value)||0, status:$('ncStatus').value,
+    documents:[], milestones:[], variations:[], activity:[] };
+  logActivity(c, 'Contract created with status '+c.status);
+  S.contracts.unshift(c); save();
+  notify('contractor','â–¤','New contract assigned: '+c.name+' ('+c.number+')');
+  notify('management','â–¤','New contract created: '+c.name+' - '+fmtUGX(val));
+  closeModal(); toast('Contract '+c.number+' created.'); go('contract', c.id);
+}
+
+/* ---- Status change ---- */
+function openStatusModal(cid){
+  const c = findContract(cid);
+  const opts = ['Draft','Under Review','Approved','Active','Suspended','Completed','Closed','Terminated'];
+  openModal(modalShell('Change Contract Status',
+  `<div class="f-field"><label>Status</label><select id="stSel">${opts.map(o=>'<option'+(o===c.status?' selected':'')+'>'+o+'</option>').join('')}</select></div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.saveStatus('${cid}')">Update</button>`));
+}
+function saveStatus(cid){
+  const c=findContract(cid); const v=$('stSel').value;
+  logActivity(c, 'Contract status changed: '+c.status+' â†’ '+v);
+  c.status=v; save(); closeModal(); toast('Status updated to '+v+'.'); render();
+}
+
+/* ---- New milestone ---- */
+function openNewMilestone(cid){
+  openModal(modalShell('Add Milestone',
+  `<div class="f-grid">
+    <div class="f-field full"><label>Milestone Name</label><input id="nmName" placeholder="e.g. Roofing Works"></div>
+    <div class="f-field"><label>Value (UGX)</label><input id="nmValue" type="number" placeholder="100000000"></div>
+    <div class="f-field"><label>Target Completion</label><input id="nmDate" type="date" value="${addDays(today(),60)}"></div>
+    <div class="f-field full"><label>Scope Tasks (one per line)</label><textarea id="nmScope" placeholder="Erect columns&#10;Install reinforcement&#10;Cast concrete"></textarea></div>
+    <div class="f-field full"><label>Deliverables (one per line)</label><textarea id="nmDeliv" placeholder="Structural Drawings&#10;Concrete Test Results"></textarea></div>
+    <div class="f-field full"><label>Achievement Checklist (one per line) - approval is blocked until all are ticked</label><textarea id="nmChk" placeholder="Columns constructed&#10;Cube test passed&#10;Site inspection passed"></textarea></div>
+  </div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.saveNewMilestone('${cid}')">Add Milestone</button>`), true);
+}
+function saveNewMilestone(cid){
+  const c=findContract(cid);
+  const name=$('nmName').value.trim(), val=Number($('nmValue').value);
+  if(!name||!val){ toast('Milestone name and value are required.'); return; }
+  const lines = id => $(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const m = { id:uid('MS'), name, value:val, targetDate:$('nmDate').value, status:'Pending',
+    scope: lines('nmScope').map(t=>({task:t, desc:'', target:$('nmDate').value, status:'Pending'})),
+    deliverables: lines('nmDeliv').map(d=>({name:d, done:false})),
+    checklist: lines('nmChk').map(x=>({item:x, done:false, by:null, date:null})),
+    docs:[], comments:[], inspection:null, completionReport:null, payment:null };
+  if(!m.checklist.length) m.checklist=[{item:'Work completed per scope', done:false},{item:'Site inspection passed', done:false}];
+  c.milestones.push(m); logActivity(c, 'Milestone added: '+name+' ('+fmtUGX(val)+')'); save();
+  notify('contractor','â—ˆ','New milestone defined: '+name+' - '+c.name);
+  closeModal(); toast('Milestone added.'); render();
+}
+
+/* ---- Upload doc (file metadata registered) ---- */
+function openUpload(cid, mid){
+  openModal(modalShell('Upload Supporting Document',
+  `<div class="f-grid">
+    <div class="f-field full"><label>Select File</label><input id="upFile" type="file"></div>
+    <div class="f-field full"><label>Or enter file name</label><input id="upName" placeholder="Concrete Test Results.pdf"></div>
+    ${mid?'':`<div class="f-field full"><label>Category</label><select id="upCat"><option>Signed Contract</option><option>BOQ</option><option>Drawings</option><option>Scope of Works</option><option>Technical Specifications</option><option>Procurement Documents</option><option>General</option></select></div>`}
+  </div>
+  <div class="lock-note" style="margin-top:14px;margin-bottom:0">ðŸ“Ž <div>Files are registered with name, size and uploader metadata to drive the workflow (binary storage moves server-side in production).</div></div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.saveUpload('${cid}','${mid||''}')">Upload</button>`));
+}
+function saveUpload(cid, mid){
+  const c=findContract(cid);
+  const f=$('upFile').files[0];
+  let name = f ? f.name : $('upName').value.trim();
+  if(!name){ toast('Choose a file or enter a file name.'); return; }
+  const size = f ? (f.size>1e6?(f.size/1e6).toFixed(1)+' MB':Math.max(1,Math.round(f.size/1e3))+' KB') : (Math.round(Math.random()*40)/10+1).toFixed(1)+' MB';
+  const doc = { id:uid('DOC'), name, size, uploadedBy:USERS[S.currentRole].name, date:fmtDate(today()), version:1 };
+  if (mid){ const m=findMilestone(cid,mid); m.docs.push(doc);
+    logActivity(c, 'Document uploaded to milestone "'+m.name+'": '+name);
+    notify('pm','ðŸ“Ž','Document uploaded by '+USERS[S.currentRole].name+': '+name+' - '+m.name);
+  } else { doc.cat=$('upCat')?$('upCat').value:'General'; c.documents.push(doc);
+    logActivity(c, 'Contract document uploaded: '+name); }
+  save(); closeModal(); toast('"'+name+'" uploaded.'); render();
+}
+function newVersion(cid, mid, did){
+  const c=findContract(cid);
+  const arr = mid&&mid!=='null' ? findMilestone(cid,mid).docs : c.documents;
+  const d = arr.find(x=>x.id===did); if(!d) return;
+  d.version++; d.uploadedBy=USERS[S.currentRole].name; d.date=fmtDate(today());
+  logActivity(c, 'New version (v'+d.version+') uploaded: '+d.name);
+  save(); toast(d.name+' updated to v'+d.version+'.'); render();
+}
+function toastDl(name){ toast('Downloading "'+name+'"â€¦'); }
+
+/* ---- Comments ---- */
+function addComment(cid, mid){
+  const inp=$('cmInput'); const txt=inp.value.trim(); if(!txt) return;
+  const m=findMilestone(cid,mid); const c=findContract(cid);
+  m.comments.push({author:USERS[S.currentRole].name, role:S.currentRole, text:txt, date:nowStr()});
+  if (S.currentRole==='contractor') notify('pm','ðŸ’¬','New comment on "'+m.name+'": '+txt.slice(0,60));
+  else notify('contractor','ðŸ’¬',USERS[S.currentRole].name+' commented on "'+m.name+'"');
+  save(); render();
+}
+
+/* ---- Milestone lifecycle ---- */
+function startMilestone(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  m.status='In Progress'; logActivity(c,'Milestone started: '+m.name); save();
+  notify('contractor','â–¶','Milestone "'+m.name+'" is now In Progress - '+c.name);
+  toast('Milestone started.'); render();
+}
+function toggleChk(cid,mid,i){
+  const c=findContract(cid), m=findMilestone(cid,mid); const x=m.checklist[i];
+  x.done=!x.done; x.by=x.done?USERS[S.currentRole].name:null; x.date=x.done?fmtDate(today()):null;
+  if (m.status==='Pending'&&x.done) m.status='In Progress';
+  logActivity(c, 'Checklist "'+x.item+'" '+(x.done?'completed':'reopened')+' - '+m.name);
+  save(); render();
+}
+function toggleDlv(cid,mid,i){
+  const c=findContract(cid), m=findMilestone(cid,mid); const d=m.deliverables[i];
+  d.done=!d.done; logActivity(c,'Deliverable "'+d.name+'" '+(d.done?'marked received':'reopened')+' - '+m.name); save(); render();
+}
+function setScope(cid,mid,i,val){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  m.scope[i].status=val;
+  if (m.status==='Pending'&&val!=='Pending') m.status='In Progress';
+  logActivity(c,'Scope task "'+m.scope[i].task+'" set to '+val+' - '+m.name); save(); render();
+}
+function requestVerification(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  if (m.checklist.some(x=>!x.done)){ toast('Complete the achievement checklist before requesting verification.'); return; }
+  m.status='Verification Requested';
+  logActivity(c,'Verification requested for milestone: '+m.name);
+  notify('pm','ðŸ”Ž','Milestone Verification Request: "'+m.name+'" - '+c.name+' ('+c.number+')');
+  save(); toast('Verification request sent to '+c.pm+'.'); render();
+}
+
+/* ---- Inspection ---- */
+function openInspection(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  m.status='Under Inspection'; save();
+  openModal(modalShell('Site Inspection Form - '+esc(m.name),
+  `<div class="lock-note" style="margin-bottom:16px">ðŸ”Ž <div>Review uploaded documents, photos and reports before recording findings. Checklist status: <b>${m.checklist.filter(x=>x.done).length}/${m.checklist.length} complete</b>.</div></div>
+  <div class="f-grid">
+    <div class="f-field"><label>Inspection Date</label><input id="inDate" type="date" value="${today()}"></div>
+    <div class="f-field"><label>Inspector</label><input id="inInsp" value="${esc(USERS[S.currentRole].name)}"></div>
+    <div class="f-field full"><label>Observations</label><textarea id="inObs" placeholder="Condition of works, conformity to drawings and specificationsâ€¦"></textarea></div>
+    <div class="f-field full"><label>Issues Found</label><textarea id="inIss" placeholder="Defects, non-conformities, outstanding itemsâ€¦ (or None)"></textarea></div>
+    <div class="f-field full"><label>Recommendation</label><select id="inRec"><option>Approve</option><option>Reject - rework required</option></select></div>
+  </div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.submitInspection('${cid}','${mid}')">Submit Inspection</button>`), true);
+}
+function submitInspection(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  const obs=$('inObs').value.trim();
+  if(!obs){ toast('Observations are required.'); return; }
+  m.inspection = { date:$('inDate').value, inspector:$('inInsp').value, observations:obs, issues:$('inIss').value.trim()||'None', recommendation:$('inRec').value.startsWith('Approve')?'Approve':'Reject' };
+  if (m.inspection.recommendation==='Approve'){
+    if (m.checklist.some(x=>!x.done)){ toast('Approval blocked: achievement checklist incomplete.'); m.status='Verification Requested'; save(); closeModal(); render(); return; }
+    m.status='Approved';
+    m.scope.forEach(t=>t.status='Completed');
+    m.deliverables.forEach(d=>d.done=true);
+    const seq = c.milestones.filter(x=>x.completionReport).length+1;
+    m.completionReport = { no:'CR-'+c.number.split('/').pop()+'-M'+seq, date:fmtDate(today()), pm:c.pm, dept:'James Mukasa' };
+    const payable = Math.round(m.value*(100-c.retention)/100);
+    m.payment = { id:'PAY-'+c.number.split('/').pop()+'-'+String(c.milestones.filter(x=>x.payment).length+1).padStart(2,'0'),
+      amount:m.value, retention:c.retention, payable, stage:0, status:'PM Approval',
+      history:[{step:'PM Approval',by:null,date:null}] };
+    logActivity(c,'Milestone "'+m.name+'" approved - completion report '+m.completionReport.no+' generated, payment request '+m.payment.id+' created');
+    notify('contractor','âœ“','Milestone approved: "'+m.name+'" - completion report generated, payment request created');
+    notify('finance','â‚£','Payment request '+m.payment.id+' created: '+fmtUGX(payable)+' payable - '+m.name);
+    save(); closeModal(); toast('Milestone approved. Completion report + payment request generated.');
+    openReport(cid,mid); render();
+  } else {
+    m.status='In Progress';
+    logActivity(c,'Milestone "'+m.name+'" inspection: rework required');
+    notify('contractor','âœ•','Inspection outcome for "'+m.name+'": rework required. See inspection notes.');
+    save(); closeModal(); toast('Inspection recorded - milestone returned to contractor for rework.'); render();
+  }
+}
+
+/* ---- Completion report ---- */
+function openReport(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid);
+  const r=m.completionReport; if(!r) return;
+  openModal(modalShell('Milestone Completion Report',
+  `<div class="report-doc" id="printArea">
+    <div class="rd-head">
+      <div><div class="rd-org">INSPIRE AFRICA GROUP</div><div class="rd-org-sub">Africa Coffee Park | Ntungamo, Uganda Â· Contract Management Office</div></div>
+      <div class="rd-no">Report No.<br><b>${esc(r.no)}</b><br>Date: ${esc(r.date)}</div>
+    </div>
+    <div class="rd-title">Milestone Completion Report</div>
+    <div class="rd-sec">1 Â· Contract Details</div>
+    <div class="rd-grid">
+      <div class="ri"><span class="k">Contract Number</span><span class="v">${esc(c.number)}</span></div>
+      <div class="ri"><span class="k">Project Name</span><span class="v">${esc(c.name)}</span></div>
+      <div class="ri"><span class="k">Contractor</span><span class="v">${esc(c.contractor)}</span></div>
+      <div class="ri"><span class="k">Project Manager</span><span class="v">${esc(c.pm)}</span></div>
+      <div class="ri"><span class="k">Department</span><span class="v">${esc(c.department)}</span></div>
+      <div class="ri"><span class="k">Location</span><span class="v">${esc(c.location)}</span></div>
+    </div>
+    <div class="rd-sec">2 Â· Milestone Details</div>
+    <div class="rd-grid">
+      <div class="ri"><span class="k">Milestone Name</span><span class="v">${esc(m.name)}</span></div>
+      <div class="ri"><span class="k">Milestone Value</span><span class="v">${fmtFull(m.value)}</span></div>
+      <div class="ri"><span class="k">Target Date</span><span class="v">${fmtDate(m.targetDate)}</span></div>
+      <div class="ri"><span class="k">Completion / Approval Date</span><span class="v">${esc(r.date)}</span></div>
+      <div class="ri"><span class="k">Retention Applied</span><span class="v">${c.retention}% (${fmtFull(Math.round(m.value*c.retention/100))})</span></div>
+      <div class="ri"><span class="k">Net Payable</span><span class="v">${fmtFull(Math.round(m.value*(100-c.retention)/100))}</span></div>
+    </div>
+    <div class="rd-sec">3 Â· Verification Findings</div>
+    <p style="margin-bottom:8px"><b>Inspection (${m.inspection?fmtDate(m.inspection.date):'-'}, ${esc(m.inspection?m.inspection.inspector:'')}):</b> ${esc(m.inspection?m.inspection.observations:'')}</p>
+    <p><b>Issues:</b> ${esc(m.inspection?m.inspection.issues:'None')}</p>
+    <div class="rd-sec">4 Â· Approved Deliverables &amp; Achievement Checklist</div>
+    <div class="rd-grid">
+      ${m.deliverables.map(d=>`<div class="ri"><span class="k">${esc(d.name)}</span><span class="v" style="color:var(--green)">âœ“ Received</span></div>`).join('')}
+      ${m.checklist.map(x=>`<div class="ri"><span class="k">${esc(x.item)}</span><span class="v" style="color:var(--green)">âœ“ ${esc(x.by||'Verified')}</span></div>`).join('')}
+    </div>
+    <div class="rd-sec">5 Â· Evidence on File</div>
+    ${m.docs.length?'<ul style="padding-left:18px">'+m.docs.map(d=>`<li style="padding:2px 0">${esc(d.name)} <span class="mono" style="font-size:10px;color:var(--text-2)">(${esc(d.size)}, ${esc(d.date)}, v${d.version})</span></li>`).join('')+'</ul>':'<p>-</p>'}
+    <div style="margin-top:22px"><span class="rd-stamp">Milestone Approved</span></div>
+    <div class="rd-sign">
+      <div class="sg"><div class="sn">${esc(r.pm)}</div><div class="sr">Project Manager</div></div>
+      <div class="sg"><div class="sn">${esc(r.dept)}</div><div class="sr">Department Head</div></div>
+      <div class="sg"><div class="sn">Date: ${esc(r.date)}</div><div class="sr">Approval Date</div></div>
+    </div>
+  </div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Close</button>
+   <button class="btn btn-primary" onclick="window.print()">ðŸ–¨ Print / Save as PDF</button>`), true);
+}
+
+/* ---- Payments ---- */
+function advancePayment(cid,mid){
+  const c=findContract(cid), m=findMilestone(cid,mid); const p=m.payment;
+  const u=USERS[S.currentRole].name;
+  p.history[p.stage] = {step:PAY_STAGES[p.stage], by:u, date:fmtDate(today())};
+  p.stage++;
+  if (p.stage>=4){ p.status='Paid'; m.status='Paid';
+    logActivity(c,'Payment '+p.id+' released: '+fmtFull(p.payable)+' - '+m.name);
+    notify('contractor','â‚£','Payment released: '+fmtUGX(p.payable)+' - '+m.name+' ('+c.number+')');
+    toast('Payment marked as Paid - '+fmtUGX(p.payable)+' released.');
+  } else {
+    p.status = PAY_STAGES[p.stage];
+    p.history[p.stage] = p.history[p.stage]||{step:PAY_STAGES[p.stage], by:null, date:null};
+    logActivity(c,'Payment '+p.id+' advanced to '+p.status+' by '+u);
+    if (p.stage===1) notify('finance','â‚£','Payment request '+p.id+' awaiting Finance Review - '+fmtUGX(p.payable));
+    if (p.stage===2) notify('management','â‚£','Payment '+p.id+' awaiting Authorization - '+fmtUGX(p.payable));
+    if (p.stage===3) notify('finance','â‚£','Payment '+p.id+' authorized - ready to disburse');
+    toast('Payment advanced to: '+p.status+'.');
+  }
+  save(); render();
+}
+
+/* ---- Variations ---- */
+function openNewVariation(cid){
+  const c=findContract(cid);
+  openModal(modalShell('Create Variation - '+esc(c.number),
+  `<div class="f-grid">
+    <div class="f-field"><label>Variation Number</label><input id="nvNo" value="VAR-${c.number.split('/').pop()}-${String(c.variations.length+1).padStart(2,'0')}"></div>
+    <div class="f-field"><label>Variation Amount (UGX)</label><input id="nvAmt" type="number" placeholder="50000000" oninput="App.previewVar('${cid}')"></div>
+    <div class="f-field full"><label>Title</label><input id="nvTitle" placeholder="e.g. Additional Drainage Works"></div>
+    <div class="f-field full"><label>Description</label><textarea id="nvDesc"></textarea></div>
+    <div class="f-field full"><label>Reason</label><textarea id="nvReason"></textarea></div>
+    <div class="f-field full"><label>Impact Assessment</label><textarea id="nvImpact"></textarea></div>
+    <div class="f-field"><label>Time Extension (days)</label><input id="nvDays" type="number" value="0"></div>
+  </div>
+  <div class="var-impact" style="margin-top:16px">
+    <div><div class="vi-k">Original Contract</div><div class="vi-v">${fmtUGX(c.value)}</div></div>
+    <div class="vi-arrow">ï¼‹</div>
+    <div><div class="vi-k">This Variation</div><div class="vi-v" id="nvPreview">UGX 0</div></div>
+    <div class="vi-arrow">ï¼</div>
+    <div><div class="vi-k">New Contract Value</div><div class="vi-v" id="nvNew" style="color:var(--saffron-deep)">${fmtUGX(contractValue(c))}</div></div>
+  </div>`,
+  `<button class="btn btn-ghost" onclick="App.closeModal()">Cancel</button>
+   <button class="btn btn-primary" onclick="App.saveVariation('${cid}')">Submit Variation</button>`), true);
+}
+function previewVar(cid){
+  const c=findContract(cid); const a=Number($('nvAmt').value)||0;
+  $('nvPreview').textContent=fmtUGX(a);
+  $('nvNew').textContent=fmtUGX(contractValue(c)+a);
+}
+function saveVariation(cid){
+  const c=findContract(cid);
+  const title=$('nvTitle').value.trim(), amt=Number($('nvAmt').value);
+  if(!title||!amt){ toast('Title and amount are required.'); return; }
+  const v={ id:uid('VAR'), number:$('nvNo').value, title, amount:amt, extensionDays:Number($('nvDays').value)||0,
+    description:$('nvDesc').value.trim(), reason:$('nvReason').value.trim(), impact:$('nvImpact').value.trim(),
+    status:'Pending', stage:0, approvals:[] };
+  c.variations.push(v);
+  logActivity(c,'Variation '+v.number+' created: '+title+' (+'+fmtUGX(amt)+')');
+  notify('dept','Â±','Variation '+v.number+' submitted for approval - '+c.name);
+  notify('management','Â±','New variation in workflow: '+title+' (+'+fmtUGX(amt)+')');
+  save(); closeModal(); toast('Variation submitted into approval workflow.'); render();
+}
+function openVariation(cid,vid){
+  const c=findContract(cid); const v=c.variations.find(x=>x.id===vid); if(!v) return;
+  openModal(modalShell('Variation '+esc(v.number)+' - '+esc(v.title),
+  `<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">${pill(v.status,{'Approved':'p-green','Pending':'p-amber','Rejected':'p-red'})}
+   <span class="mono" style="font-size:11px;color:var(--text-2)">${esc(c.name)} Â· ${esc(c.number)}</span></div>
+  <div class="rd-sec" style="margin-top:0">Variation Information</div>
+  <p style="margin-bottom:8px"><b>Description:</b> ${esc(v.description||'-')}</p>
+  <p style="margin-bottom:8px"><b>Reason:</b> ${esc(v.reason||'-')}</p>
+  <p style="margin-bottom:14px"><b>Impact Assessment:</b> ${esc(v.impact||'-')}</p>
+  <div class="rd-sec">Financial Impact</div>
+  <div class="var-impact" style="margin-bottom:16px">
+    <div><div class="vi-k">Original Contract</div><div class="vi-v">${fmtUGX(c.value)}</div></div>
+    <div class="vi-arrow">ï¼‹</div>
+    <div><div class="vi-k">Variation</div><div class="vi-v">${fmtUGX(v.amount)}</div></div>
+    <div class="vi-arrow">ï¼</div>
+    <div><div class="vi-k">New Contract Value</div><div class="vi-v" style="color:var(--saffron-deep)">${fmtUGX(c.value+v.amount)}</div></div>
+  </div>
+  <div class="rd-sec">Schedule Impact</div>
+  <div class="var-impact" style="margin-bottom:16px">
+    <div><div class="vi-k">Original End Date</div><div class="vi-v" style="font-size:13px">${fmtDate(c.endDate)}</div></div>
+    <div class="vi-arrow">ï¼‹</div>
+    <div><div class="vi-k">Extension</div><div class="vi-v">${v.extensionDays} days</div></div>
+    <div class="vi-arrow">ï¼</div>
+    <div><div class="vi-k">New End Date</div><div class="vi-v" style="font-size:13px">${fmtDate(addDays(c.endDate, v.extensionDays))}</div></div>
+  </div>
+  <div class="rd-sec">Approval Workflow</div>
+  <div class="stepper" style="margin-bottom:6px">${VAR_STAGES.map((s,i)=>{
+    const a=v.approvals[i]; const done=i<v.stage||v.status==='Approved'; const curr=v.status==='Pending'&&i===v.stage;
+    return `<div class="step ${done?'done':''} ${curr?'curr':''}"><div class="step-dot">${done?'âœ“':i+1}</div>
+    <div class="step-lbl">${s}${a&&a.by?'<br><span style="font-weight:400;color:var(--text-2)">'+esc(a.by)+' Â· '+esc(a.date)+'</span>':''}</div></div>`;}).join('')}</div>`,
+  `${v.status==='Pending'&&can('approveVariation')?`
+    <button class="btn btn-danger" onclick="App.actVariation('${cid}','${vid}',false)">Reject</button>
+    <button class="btn btn-primary" onclick="App.actVariation('${cid}','${vid}',true)">Approve as ${esc(VAR_STAGES[Math.min(v.stage,3)])}</button>`:
+    '<button class="btn btn-ghost" onclick="App.closeModal()">Close</button>'}`), true);
+}
+function actVariation(cid,vid,approve){
+  const c=findContract(cid); const v=c.variations.find(x=>x.id===vid);
+  const u=USERS[S.currentRole].name;
+  if (!approve){ v.status='Rejected';
+    logActivity(c,'Variation '+v.number+' rejected by '+u);
+    notify('pm','âœ•','Variation '+v.number+' rejected at '+VAR_STAGES[Math.min(v.stage,3)]);
+    save(); closeModal(); toast('Variation rejected.'); render(); return; }
+  v.approvals[v.stage]={step:VAR_STAGES[v.stage], by:u, date:fmtDate(today())};
+  v.stage++;
+  if (v.stage>=4){ v.status='Approved';
+    if (v.extensionDays){ c.endDate = addDays(c.endDate, v.extensionDays); }
+    logActivity(c,'Variation '+v.number+' fully approved (+'+fmtUGX(v.amount)+(v.extensionDays?', +'+v.extensionDays+' days':'')+') - new contract value '+fmtUGX(contractValue(c)));
+    notify('contractor','âœ“','Variation approved: '+v.title+' (+'+fmtUGX(v.amount)+')');
+    notify('finance','Â±','Contract '+c.number+' value revised to '+fmtUGX(contractValue(c)));
+    toast('Variation fully approved. Contract value updated.');
+  } else {
+    logActivity(c,'Variation '+v.number+' approved at '+VAR_STAGES[v.stage-1]+' by '+u);
+    notify('management','Â±','Variation '+v.number+' now at: '+VAR_STAGES[Math.min(v.stage,3)]);
+    toast('Approved. Next stage: '+VAR_STAGES[Math.min(v.stage,3)]+'.');
+  }
+  save(); closeModal(); render();
+}
+
+/* =====================================================================
+   NOTIFICATIONS, ROLE & INIT
+===================================================================== */
+function renderNotifs(){
+  const list = S.notifications.filter(n=>n.role===S.currentRole);
+  const unread = list.filter(n=>!n.read).length;
+  const badge = $('notifBadge');
+  badge.style.display = unread? 'flex':'none'; badge.textContent = unread;
+  $('drawerBody').innerHTML = list.map(n=>`
+    <div class="notif ${n.read?'':'unread'}"><div class="notif-ic">${n.icon}</div>
+    <div><div class="nt">${esc(n.text)}</div><div class="nd">${esc(n.date)}</div></div></div>`).join('')
+    || '<div class="empty"><div class="e-ic">N</div>No notifications for this role.</div>';
+}
+function toggleDrawer(){
+  $('drawer').classList.toggle('open');
+}
+function markAllRead(){
+  S.notifications.forEach(n=>{ if(n.role===S.currentRole) n.read=true; });
+  save(); renderNotifs();
+}
+function switchRole(role){
+  S.currentRole = role; save();
+  toast('Now viewing as: '+USERS[role].label+'. Buttons and permissions have updated.');
+  render();
+}
+function resetData(){
+  if(!confirm('Reset all demo data to the original seed? This clears every change you have made.')) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  memStore=null; S = seed(); save();
+  toast('Demo data reset.'); render();
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); $('drawer').classList.remove('open'); } });
+render();
+
+/* public API */
+return { go, switchRole, toggleDrawer, markAllRead, resetData, closeModal,
+  openNewContract, saveNewContract, openStatusModal, saveStatus,
+  openNewMilestone, saveNewMilestone, openUpload, saveUpload, newVersion, toastDl,
+  addComment, startMilestone, toggleChk, toggleDlv, setScope, requestVerification,
+  openInspection, submitInspection, openReport, advancePayment,
+  openNewVariation, previewVar, saveVariation, openVariation, actVariation,
+  openNewRequest, saveNewRequest, approveRequest, convertRequest, cycleObligation, advanceExecution, completeCloseout,
+  filterContracts, fmt: fmtUGX };
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+

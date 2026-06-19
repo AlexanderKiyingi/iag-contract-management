@@ -20,10 +20,21 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+)
+
+const (
+	// writeWait bounds a single write; pongWait is how long we'll wait for a
+	// pong before considering the peer dead; pingPeriod must be < pongWait so a
+	// pong always lands before the read deadline elapses. Mirrors the values in
+	// shared/services/notifications so heartbeat timing is uniform across hubs.
+	writeWait  = 10 * time.Second
+	pongWait   = 60 * time.Second
+	pingPeriod = (pongWait * 9) / 10
 )
 
 // Push is the message envelope sent to clients. Mirrors the platform shape used
@@ -52,7 +63,17 @@ type clientState struct {
 func (cs *clientState) write(conn *websocket.Conn, payload []byte) error {
 	cs.writeMu.Lock()
 	defer cs.writeMu.Unlock()
+	_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 	return conn.WriteMessage(websocket.TextMessage, payload)
+}
+
+// ping sends a websocket control ping under the same write mutex as snapshot
+// writes — gorilla permits only one concurrent writer per connection.
+func (cs *clientState) ping(conn *websocket.Conn) error {
+	cs.writeMu.Lock()
+	defer cs.writeMu.Unlock()
+	_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
+	return conn.WriteMessage(websocket.PingMessage, nil)
 }
 
 // Hub tracks live workspace connections and fans out snapshots.
@@ -100,7 +121,34 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// Initial snapshot so the client renders immediately without a bootstrap GET.
 	_ = cs.write(conn, h.encode(sess))
 
-	// Drain inbound frames (the UI only sends pings); any read error = disconnect.
+	// Heartbeat: ping on an interval and require a pong inside pongWait, so a
+	// silently dropped connection (idle past an LB/proxy timeout) is detected
+	// instead of lingering as a dead entry that fails on the next broadcast.
+	conn.SetReadLimit(512)
+	_ = conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error {
+		return conn.SetReadDeadline(time.Now().Add(pongWait))
+	})
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		ticker := time.NewTicker(pingPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				if err := cs.ping(conn); err != nil {
+					_ = conn.Close() // unblocks the read loop below
+					return
+				}
+			}
+		}
+	}()
+
+	// Drain inbound frames (the UI only sends pings/pongs); any read error —
+	// including a missed pong tripping the read deadline — means disconnect.
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			return
