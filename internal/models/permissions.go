@@ -79,6 +79,10 @@ var (
 		{ID: "clauses", Label: "Clause library"},
 		{ID: "budgets", Label: "Budgets"},
 		{ID: "closeout", Label: "Closeout"},
+		// Monthly-report modules (back the Construction Department MR workbook).
+		{ID: "contractors", Label: "Contractors"},
+		{ID: "progressreports", Label: "Progress reports"},
+		{ID: "valuations", Label: "Valuations"},
 	}
 	crudActions = []CrudAction{
 		{Key: "create", Label: "Create"},
@@ -95,29 +99,32 @@ var (
 	}
 	builtinRoles  = []string{"super_admin", "admin", "manager", "viewer", "contractor"}
 	legacyAliases = map[string][]string{
-		"portfolio.view":       {"contracts.read", "zones.read"},
-		"portfolio.edit":       {"contracts.create", "contracts.read", "contracts.update", "zones.read", "zones.update"},
-		"portfolio.delete":     {"contracts.delete"},
-		"payments.view":        {"payments.read"},
-		"tasks.manage":         {"tasks.create", "tasks.read", "tasks.update", "tasks.delete"},
-		"milestones.manage":    {"milestones.create", "milestones.read", "milestones.update", "milestones.delete"},
-		"materials.manage":     {"materials.create", "materials.read", "materials.update", "materials.delete"},
-		"users.manage":         {"users.create", "users.read", "users.update", "users.delete"},
-		"roles.manage":         {"roles.create", "roles.read", "roles.update", "roles.delete"},
-		"audit.view":           {"audit.read"},
-		"reports.export":       {"reports.read", "reports.create"},
-		"insights.run":         {"insights.read", "insights.update"},
-		"requisitions.manage":  {"requisitions.create", "requisitions.read", "requisitions.update"},
-		"requisitions.approve": {"requisitions.update"},
-		"variations.manage":    {"variations.create", "variations.read", "variations.update"},
-		"variations.approve":   {"variations.update"},
-		"payments.approve":     {"payments.update"},
-		"obligations.manage":   {"obligations.create", "obligations.read", "obligations.update", "obligations.delete"},
-		"approvals.manage":     {"approvals.create", "approvals.read", "approvals.update", "approvals.delete"},
-		"templates.manage":     {"templates.create", "templates.read", "templates.update", "templates.delete"},
-		"clauses.manage":       {"clauses.create", "clauses.read", "clauses.update", "clauses.delete"},
-		"budgets.manage":       {"budgets.create", "budgets.read", "budgets.update", "budgets.delete"},
-		"closeout.manage":      {"closeout.create", "closeout.read", "closeout.update"},
+		"portfolio.view":         {"contracts.read", "zones.read"},
+		"portfolio.edit":         {"contracts.create", "contracts.read", "contracts.update", "zones.read", "zones.update"},
+		"portfolio.delete":       {"contracts.delete"},
+		"payments.view":          {"payments.read"},
+		"tasks.manage":           {"tasks.create", "tasks.read", "tasks.update", "tasks.delete"},
+		"milestones.manage":      {"milestones.create", "milestones.read", "milestones.update", "milestones.delete"},
+		"materials.manage":       {"materials.create", "materials.read", "materials.update", "materials.delete"},
+		"users.manage":           {"users.create", "users.read", "users.update", "users.delete"},
+		"roles.manage":           {"roles.create", "roles.read", "roles.update", "roles.delete"},
+		"audit.view":             {"audit.read"},
+		"reports.export":         {"reports.read", "reports.create"},
+		"insights.run":           {"insights.read", "insights.update"},
+		"requisitions.manage":    {"requisitions.create", "requisitions.read", "requisitions.update"},
+		"requisitions.approve":   {"requisitions.update"},
+		"variations.manage":      {"variations.create", "variations.read", "variations.update"},
+		"variations.approve":     {"variations.update"},
+		"payments.approve":       {"payments.update"},
+		"obligations.manage":     {"obligations.create", "obligations.read", "obligations.update", "obligations.delete"},
+		"approvals.manage":       {"approvals.create", "approvals.read", "approvals.update", "approvals.delete"},
+		"templates.manage":       {"templates.create", "templates.read", "templates.update", "templates.delete"},
+		"clauses.manage":         {"clauses.create", "clauses.read", "clauses.update", "clauses.delete"},
+		"budgets.manage":         {"budgets.create", "budgets.read", "budgets.update", "budgets.delete"},
+		"closeout.manage":        {"closeout.create", "closeout.read", "closeout.update"},
+		"contractors.manage":     {"contractors.create", "contractors.read", "contractors.update", "contractors.delete"},
+		"progressreports.manage": {"progressreports.create", "progressreports.read", "progressreports.update", "progressreports.delete"},
+		"valuations.manage":      {"valuations.create", "valuations.read", "valuations.update", "valuations.delete"},
 	}
 )
 
@@ -324,6 +331,9 @@ func permissionsForRole(role string) []string {
 		add("templates", "read")
 		add("clauses", "read")
 		add("budgets", "read")
+		add("contractors", "create", "read", "update", "delete")
+		add("progressreports", "create", "read", "update", "delete")
+		add("valuations", "create", "read", "update")
 		return out
 	case "contractor":
 		return []string{"contracts.read", "milestones.read", "obligations.read"}

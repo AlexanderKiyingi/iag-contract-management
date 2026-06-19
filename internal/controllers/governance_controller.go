@@ -77,11 +77,20 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		views.Error(w, http.StatusBadRequest, "invalid status")
 		return
 	}
+	execStatus := in.ExecutionStatus
+	if execStatus == "" {
+		execStatus = models.ExecNotStarted
+	}
+	if !execStatus.Valid() {
+		views.Error(w, http.StatusBadRequest, "invalid executionStatus")
+		return
+	}
 	c := models.GovContract{
 		ID:                models.NewGovID("GCT"),
 		Number:            strings.TrimSpace(in.Number),
 		Name:              strings.TrimSpace(in.Name),
 		Contractor:        in.Contractor,
+		ContractorID:      in.ContractorID,
 		ContractorContact: in.ContractorContact,
 		Type:              in.Type,
 		StartDate:         in.StartDate,
@@ -92,6 +101,11 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		Value:             in.Value,
 		Retention:         in.Retention,
 		Status:            status,
+		ExecutionStatus:   execStatus,
+		Progress:          clampProgress(in.Progress),
+		Received:          in.Received,
+		VariationTotal:    in.VariationTotal,
+		PlannedCompletion: in.PlannedCompletion,
 		Documents:         in.Documents,
 		Activity:          []models.GovActivity{{Date: nowStamp(), Actor: in.PM, Action: "Contract created in " + string(status) + " status"}},
 	}
@@ -131,6 +145,10 @@ func (g *GovernanceController) PatchContract(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		statusChanged = true
+	}
+	if p.ExecutionStatus != nil && *p.ExecutionStatus != "" && !p.ExecutionStatus.Valid() {
+		views.Error(w, http.StatusBadRequest, "invalid executionStatus")
+		return
 	}
 
 	applyContractPatch(existing, p)
@@ -310,9 +328,38 @@ func applyContractPatch(c *models.GovContract, p models.GovContractPatch) {
 	if p.Status != nil {
 		c.Status = *p.Status
 	}
+	if p.ContractorID != nil {
+		c.ContractorID = *p.ContractorID
+	}
+	if p.ExecutionStatus != nil {
+		c.ExecutionStatus = *p.ExecutionStatus
+	}
+	if p.Progress != nil {
+		c.Progress = clampProgress(*p.Progress)
+	}
+	if p.Received != nil {
+		c.Received = *p.Received
+	}
+	if p.VariationTotal != nil {
+		c.VariationTotal = *p.VariationTotal
+	}
+	if p.PlannedCompletion != nil {
+		c.PlannedCompletion = *p.PlannedCompletion
+	}
 	if p.Documents != nil {
 		c.Documents = *p.Documents
 	}
+}
+
+// clampProgress bounds a progress percentage to [0, 100].
+func clampProgress(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > 100 {
+		return 100
+	}
+	return v
 }
 
 func applyMilestonePatch(m *models.GovMilestone, p models.GovMilestonePatch) {
