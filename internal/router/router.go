@@ -162,6 +162,27 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))
 	gov.PUT("/contracts/:id/closeout", wrap(mvc.Governance.UpsertCloseout))
 
+	// Monthly report (MR): contractors, per-period progress reports, IPC
+	// valuations, and the executive-summary rollup.
+	gov.GET("/contractors", wrap(mvc.Governance.ListContractors))
+	gov.POST("/contractors", wrap(mvc.Governance.CreateContractor))
+	gov.GET("/contractors/:id", wrap(mvc.Governance.GetContractor))
+	gov.PATCH("/contractors/:id", wrap(mvc.Governance.PatchContractor))
+	gov.DELETE("/contractors/:id", wrap(mvc.Governance.DeleteContractor))
+
+	gov.GET("/contracts/:id/reports", wrap(mvc.Governance.ListContractReports))
+	gov.PUT("/contracts/:id/reports", wrap(mvc.Governance.UpsertContractReport))
+	gov.GET("/reports", wrap(mvc.Governance.ListReportsByPeriod))
+	gov.DELETE("/reports/:id", wrap(mvc.Governance.DeleteReport))
+
+	gov.GET("/valuations", wrap(mvc.Governance.ListValuations))
+	gov.POST("/valuations", wrap(mvc.Governance.CreateValuation))
+	gov.GET("/valuations/:id", wrap(mvc.Governance.GetValuation))
+	gov.PATCH("/valuations/:id", wrap(mvc.Governance.UpdateValuation))
+	gov.DELETE("/valuations/:id", wrap(mvc.Governance.DeleteValuation))
+
+	gov.GET("/summary", wrap(mvc.Governance.MonthlySummaryReport))
+
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
@@ -243,4 +264,5 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	// Reports
 	g.GET("/exports/contracts.csv", wrap(mvc.Exports.ExportContractsCSV))
+	g.GET("/exports/monthly-report.xlsx", wrap(mvc.Governance.ExportMonthlyReportXLSX))
 }
