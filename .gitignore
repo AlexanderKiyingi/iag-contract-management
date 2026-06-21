@@ -1,3 +1,5 @@
 .env
 *.exe
 /bin/
+# Accidentally-nested local Downloads folder — never commit (personal files).
+/Downloads/
