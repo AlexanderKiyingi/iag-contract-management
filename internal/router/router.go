@@ -171,6 +171,15 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.DELETE("/contracts/:id/documents/:docId", wrap(mvc.Governance.DeleteContractDoc))
 	gov.GET("/documents/url", wrap(mvc.Governance.PresignDownloadDoc))
 
+	// Contractor portal: read-only, always scoped to the caller's linked
+	// contractor (no module permission required — access is by ownership).
+	gov.GET("/portal/me", wrap(mvc.Governance.PortalMe))
+	gov.GET("/portal/contracts", wrap(mvc.Governance.PortalContracts))
+	gov.GET("/portal/contracts/:id", wrap(mvc.Governance.PortalContract))
+	gov.GET("/portal/contracts/:id/milestones", wrap(mvc.Governance.PortalMilestones))
+	gov.GET("/portal/contracts/:id/variations", wrap(mvc.Governance.PortalVariations))
+	gov.GET("/portal/contracts/:id/reports", wrap(mvc.Governance.PortalReports))
+
 	// Monthly report (MR): contractors, per-period progress reports, IPC
 	// valuations, and the executive-summary rollup.
 	gov.GET("/contractors", wrap(mvc.Governance.ListContractors))

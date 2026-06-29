@@ -77,6 +77,7 @@ func SessionFromClaims(ctx context.Context, claims *platformauth.Claims, lookup 
 		Role:        roleFromGroups(claims.Groups, claims.IsSuperuser, claims.IsStaff),
 		DisplayName: displayName,
 		Permissions: claims.Permissions,
+		UserID:      claims.Subject,
 	}
 	if lookup != nil && sess.Email != "" {
 		if sup, ok, _ := lookup.ContractorSupervisor(ctx, sess.Email); ok {

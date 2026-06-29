@@ -15,7 +15,7 @@ import (
 
 // ---------------- Contractors ----------------
 
-const contractorCols = `id, name, contact, created_at, updated_at`
+const contractorCols = `id, name, contact, COALESCE(platform_user_id,'') AS platform_user_id, created_at, updated_at`
 
 func (s *GovStore) ListContractors(ctx context.Context) ([]models.GovContractor, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+contractorCols+` FROM gov_contractors ORDER BY name`)
@@ -45,9 +45,9 @@ func (s *GovStore) GetContractor(ctx context.Context, id string) (*models.GovCon
 
 func (s *GovStore) CreateContractor(ctx context.Context, c models.GovContractor) (*models.GovContractor, error) {
 	row := s.pool.QueryRow(ctx, `
-		INSERT INTO gov_contractors (id, name, contact)
-		VALUES ($1,$2,$3) RETURNING `+contractorCols,
-		c.ID, c.Name, c.Contact)
+		INSERT INTO gov_contractors (id, name, contact, platform_user_id)
+		VALUES ($1,$2,$3,NULLIF($4,'')) RETURNING `+contractorCols,
+		c.ID, c.Name, c.Contact, c.PlatformUserID)
 	return scanContractor(row)
 }
 
@@ -67,9 +67,9 @@ func (s *GovStore) UpsertContractorByName(ctx context.Context, c models.GovContr
 
 func (s *GovStore) UpdateContractor(ctx context.Context, c models.GovContractor) (*models.GovContractor, error) {
 	row := s.pool.QueryRow(ctx, `
-		UPDATE gov_contractors SET name=$2, contact=$3, updated_at=NOW()
+		UPDATE gov_contractors SET name=$2, contact=$3, platform_user_id=NULLIF($4,''), updated_at=NOW()
 		WHERE id=$1 RETURNING `+contractorCols,
-		c.ID, c.Name, c.Contact)
+		c.ID, c.Name, c.Contact, c.PlatformUserID)
 	cc, err := scanContractor(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
@@ -90,10 +90,24 @@ func (s *GovStore) DeleteContractor(ctx context.Context, id string) error {
 
 func scanContractor(row pgx.Row) (*models.GovContractor, error) {
 	var c models.GovContractor
-	if err := row.Scan(&c.ID, &c.Name, &c.Contact, &c.CreatedAt, &c.UpdatedAt); err != nil {
+	if err := row.Scan(&c.ID, &c.Name, &c.Contact, &c.PlatformUserID, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return &c, nil
+}
+
+// GetContractorByUserID resolves the contractor a platform user is bound to.
+func (s *GovStore) GetContractorByUserID(ctx context.Context, userID string) (*models.GovContractor, error) {
+	if userID == "" {
+		return nil, ErrGovNotFound
+	}
+	row := s.pool.QueryRow(ctx,
+		`SELECT `+contractorCols+` FROM gov_contractors WHERE platform_user_id=$1`, userID)
+	c, err := scanContractor(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return c, err
 }
 
 // ---------------- Progress reports ----------------

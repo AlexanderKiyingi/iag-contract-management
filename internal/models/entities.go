@@ -178,6 +178,9 @@ type Session struct {
 	DisplayName   string   `json:"displayName"`
 	ContractorSup *string  `json:"contractorSup,omitempty"`
 	Permissions   []string `json:"-"`
+	// UserID is the platform user identity (JWT subject), used to scope a
+	// logged-in contractor to their linked governance contractor.
+	UserID string `json:"-"`
 }
 
 type BootstrapResponse struct {

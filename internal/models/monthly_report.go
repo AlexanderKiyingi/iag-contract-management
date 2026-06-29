@@ -16,18 +16,23 @@ type GovContractor struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Contact   string    `json:"contact,omitempty"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	// PlatformUserID binds this contractor to a platform user (JWT subject) so
+	// that user is scoped to this contractor's contracts in the portal.
+	PlatformUserID string    `json:"platformUserId,omitempty"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
 type GovContractorInput struct {
-	Name    string `json:"name"`
-	Contact string `json:"contact"`
+	Name           string `json:"name"`
+	Contact        string `json:"contact"`
+	PlatformUserID string `json:"platformUserId"`
 }
 
 type GovContractorPatch struct {
-	Name    *string `json:"name,omitempty"`
-	Contact *string `json:"contact,omitempty"`
+	Name           *string `json:"name,omitempty"`
+	Contact        *string `json:"contact,omitempty"`
+	PlatformUserID *string `json:"platformUserId,omitempty"`
 }
 
 // ----- Progress reports (per contract, per period) -----
