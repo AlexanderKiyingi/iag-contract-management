@@ -425,6 +425,24 @@ func (p *Postgres) ContractorSupervisor(ctx context.Context, email string) (stri
 	return sup, true, nil
 }
 
+// GovContractorLinked reports whether a governance contractor is bound to the
+// given platform user id (gov_contractors.platform_user_id). Used to promote a
+// linked user to the contractor role so the governance portal is shown.
+func (p *Postgres) GovContractorLinked(ctx context.Context, userID string) (bool, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return false, nil
+	}
+	var exists bool
+	err := p.Pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM gov_contractors WHERE platform_user_id = $1)`, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 // UpsertContractor binds email → supervisor for the contractor portal.
 func (p *Postgres) UpsertContractor(ctx context.Context, email, supervisor string) error {
 	email = strings.ToLower(strings.TrimSpace(email))
