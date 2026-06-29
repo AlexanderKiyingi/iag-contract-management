@@ -97,6 +97,33 @@ curl http://localhost:8080/api/v1/contract-management/ready
 ./scripts/smoke_test.sh
 ```
 
+## Document storage (S3-compatible)
+
+Governance contract documents are uploaded to an S3-compatible bucket (AWS S3 /
+Cloudflare R2 / MinIO) using **presigned URLs** — the service signs URLs
+(stdlib SigV4, path-style) and the browser PUTs/GETs the object directly; file
+bytes never pass through the service.
+
+Configure via env (`S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
+`S3_SECRET_ACCESS_KEY`, `S3_USE_SSL`). When unset the upload endpoints return
+`503` and the rest of the service is unaffected.
+
+**Bucket CORS is required** — the browser uploads/downloads cross-origin, so the
+bucket must allow `PUT` and `GET` (and `OPTIONS` preflight) from the app origin,
+e.g.:
+
+```json
+[{ "AllowedOrigins": ["https://<app-origin>"],
+   "AllowedMethods": ["GET", "PUT"],
+   "AllowedHeaders": ["*"],
+   "ExposeHeaders": ["ETag"] }]
+```
+
+Endpoints (under `/v1/governance`): `POST /contracts/:id/documents/presign`,
+`POST /contracts/:id/documents`, `DELETE /contracts/:id/documents/:docId`,
+`GET /documents/url?key=`, and the portal download `GET
+/portal/contracts/:id/documents/:docId/url`.
+
 ## Railway
 
 See [RAILWAY.md](./RAILWAY.md).

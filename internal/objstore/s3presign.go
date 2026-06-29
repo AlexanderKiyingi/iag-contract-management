@@ -75,19 +75,34 @@ func (p *Presigner) presign(method, key string, expiry time.Duration) string {
 	now := time.Now().UTC()
 	amzDate := now.Format("20060102T150405Z")
 	dateStamp := now.Format("20060102")
-
 	canonicalURI := "/" + p.bucket + "/" + encodePath(key)
-	credentialScope := dateStamp + "/" + p.region + "/s3/aws4_request"
+
+	canonicalQuery, signature := sigV4PresignQuery(
+		method, p.endpoint, canonicalURI, p.accessKey, p.secretKey,
+		p.region, "s3", amzDate, dateStamp, int(expiry.Seconds()),
+	)
+	return p.scheme() + "://" + p.endpoint + canonicalURI + "?" + canonicalQuery +
+		"&X-Amz-Signature=" + signature
+}
+
+// sigV4PresignQuery computes the canonical query string and the SigV4 signature
+// for a presigned request. Pure (clock supplied via amzDate/dateStamp) so it
+// can be checked against AWS's published example vectors.
+func sigV4PresignQuery(
+	method, host, canonicalURI, accessKey, secretKey, region, service, amzDate, dateStamp string,
+	expires int,
+) (canonicalQuery, signature string) {
+	credentialScope := dateStamp + "/" + region + "/" + service + "/aws4_request"
 
 	q := url.Values{}
 	q.Set("X-Amz-Algorithm", "AWS4-HMAC-SHA256")
-	q.Set("X-Amz-Credential", p.accessKey+"/"+credentialScope)
+	q.Set("X-Amz-Credential", accessKey+"/"+credentialScope)
 	q.Set("X-Amz-Date", amzDate)
-	q.Set("X-Amz-Expires", strconv.Itoa(int(expiry.Seconds())))
+	q.Set("X-Amz-Expires", strconv.Itoa(expires))
 	q.Set("X-Amz-SignedHeaders", "host")
-	canonicalQuery := canonicalizeQuery(q)
+	canonicalQuery = canonicalizeQuery(q)
 
-	canonicalHeaders := "host:" + p.endpoint + "\n"
+	canonicalHeaders := "host:" + host + "\n"
 	canonicalRequest := strings.Join([]string{
 		method,
 		canonicalURI,
@@ -104,11 +119,9 @@ func (p *Presigner) presign(method, key string, expiry time.Duration) string {
 		sha256Hex(canonicalRequest),
 	}, "\n")
 
-	signingKey := deriveSigningKey(p.secretKey, dateStamp, p.region, "s3")
-	signature := hex.EncodeToString(hmacSHA256(signingKey, stringToSign))
-
-	return p.scheme() + "://" + p.endpoint + canonicalURI + "?" + canonicalQuery +
-		"&X-Amz-Signature=" + signature
+	signingKey := deriveSigningKey(secretKey, dateStamp, region, service)
+	signature = hex.EncodeToString(hmacSHA256(signingKey, stringToSign))
+	return canonicalQuery, signature
 }
 
 // encodePath URI-encodes an object key, preserving "/" between segments.

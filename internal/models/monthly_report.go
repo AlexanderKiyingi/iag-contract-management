@@ -16,9 +16,10 @@ type GovContractor struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Contact   string    `json:"contact,omitempty"`
-	// PlatformUserID binds this contractor to a platform user (JWT subject) so
-	// that user is scoped to this contractor's contracts in the portal.
+	// PlatformUserID / UserEmail bind this contractor to a login so that user is
+	// scoped to this contractor's contracts in the portal. Either matches.
 	PlatformUserID string    `json:"platformUserId,omitempty"`
+	UserEmail      string    `json:"userEmail,omitempty"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -27,12 +28,14 @@ type GovContractorInput struct {
 	Name           string `json:"name"`
 	Contact        string `json:"contact"`
 	PlatformUserID string `json:"platformUserId"`
+	UserEmail      string `json:"userEmail"`
 }
 
 type GovContractorPatch struct {
 	Name           *string `json:"name,omitempty"`
 	Contact        *string `json:"contact,omitempty"`
 	PlatformUserID *string `json:"platformUserId,omitempty"`
+	UserEmail      *string `json:"userEmail,omitempty"`
 }
 
 // ----- Progress reports (per contract, per period) -----

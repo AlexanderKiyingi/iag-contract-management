@@ -16,8 +16,8 @@ import (
 type ContractorLookup interface {
 	ContractorSupervisor(ctx context.Context, email string) (string, bool, error)
 	// GovContractorLinked reports whether a governance contractor is bound to
-	// the platform user id (JWT subject).
-	GovContractorLinked(ctx context.Context, userID string) (bool, error)
+	// the platform user id (JWT subject) or email.
+	GovContractorLinked(ctx context.Context, userID, email string) (bool, error)
 }
 
 // GinPlatformAuth verifies the inbound Bearer against the supplied platform
@@ -93,8 +93,8 @@ func SessionFromClaims(ctx context.Context, claims *platformauth.Claims, lookup 
 	}
 	// A user bound to a governance contractor is a portal contractor even
 	// without a legacy contractor_supervisors row.
-	if lookup != nil && sess.Role == "viewer" && claims.Subject != "" {
-		if linked, _ := lookup.GovContractorLinked(ctx, claims.Subject); linked {
+	if lookup != nil && sess.Role == "viewer" && (claims.Subject != "" || sess.Email != "") {
+		if linked, _ := lookup.GovContractorLinked(ctx, claims.Subject, sess.Email); linked {
 			sess.Role = "contractor"
 		}
 	}

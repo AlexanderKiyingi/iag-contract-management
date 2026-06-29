@@ -16,11 +16,11 @@ import (
 // an error response and returns nil.
 func (g *GovernanceController) resolvePortalContractor(w http.ResponseWriter, r *http.Request) *models.GovContractor {
 	sess := g.model.SessionFromRequest(r.Context())
-	if sess.UserID == "" {
+	if sess.UserID == "" && sess.Email == "" {
 		views.Error(w, http.StatusUnauthorized, "authentication required")
 		return nil
 	}
-	c, err := g.gov.GetContractorByUserID(r.Context(), sess.UserID)
+	c, err := g.gov.GetContractorForUser(r.Context(), sess.UserID, sess.Email)
 	if err != nil || c == nil {
 		views.Error(w, http.StatusForbidden, "no contractor profile is linked to your account")
 		return nil
@@ -117,6 +117,37 @@ func (g *GovernanceController) PortalVariations(w http.ResponseWriter, r *http.R
 		return
 	}
 	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+// PortalDocURL returns a presigned download URL for a document on an owned
+// contract — the portal equivalent of PresignDownloadDoc, scoped by ownership
+// (contractors lack contracts.read, so they cannot use the admin endpoint).
+func (g *GovernanceController) PortalDocURL(w http.ResponseWriter, r *http.Request) {
+	c := g.resolvePortalContractor(w, r)
+	if c == nil {
+		return
+	}
+	con := g.ownedContract(w, r, c.ID)
+	if con == nil {
+		return
+	}
+	if !g.storageReady(w) {
+		return
+	}
+	docID := pathSegmentAfter(r, "documents")
+	for _, d := range con.Documents {
+		if d.ID == docID {
+			if d.Key == "" {
+				views.Error(w, http.StatusNotFound, "no file attached to this document")
+				return
+			}
+			views.JSON(w, http.StatusOK, map[string]string{
+				"url": g.docs.PresignGet(d.Key, docPresignExpiry),
+			})
+			return
+		}
+	}
+	views.Error(w, http.StatusNotFound, "document not found")
 }
 
 // PortalReports lists progress reports for an owned contract.

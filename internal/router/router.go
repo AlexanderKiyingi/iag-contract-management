@@ -179,6 +179,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.GET("/portal/contracts/:id/milestones", wrap(mvc.Governance.PortalMilestones))
 	gov.GET("/portal/contracts/:id/variations", wrap(mvc.Governance.PortalVariations))
 	gov.GET("/portal/contracts/:id/reports", wrap(mvc.Governance.PortalReports))
+	gov.GET("/portal/contracts/:id/documents/:docId/url", wrap(mvc.Governance.PortalDocURL))
 
 	// Monthly report (MR): contractors, per-period progress reports, IPC
 	// valuations, and the executive-summary rollup.

@@ -59,6 +59,7 @@ func (g *GovernanceController) CreateContractor(w http.ResponseWriter, r *http.R
 		Name:           strings.TrimSpace(in.Name),
 		Contact:        in.Contact,
 		PlatformUserID: strings.TrimSpace(in.PlatformUserID),
+		UserEmail:      strings.TrimSpace(in.UserEmail),
 	})
 	if err != nil {
 		views.WriteError(w, err)
@@ -88,6 +89,9 @@ func (g *GovernanceController) PatchContractor(w http.ResponseWriter, r *http.Re
 	}
 	if p.PlatformUserID != nil {
 		existing.PlatformUserID = strings.TrimSpace(*p.PlatformUserID)
+	}
+	if p.UserEmail != nil {
+		existing.UserEmail = strings.TrimSpace(*p.UserEmail)
 	}
 	updated, err := g.gov.UpdateContractor(r.Context(), *existing)
 	if err != nil {
