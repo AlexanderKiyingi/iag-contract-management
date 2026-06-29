@@ -125,6 +125,10 @@ type GovDoc struct {
 	Date       string `json:"date,omitempty"`
 	Version    int    `json:"version,omitempty"`
 	Cat        string `json:"cat,omitempty"`
+	// Key is the object-storage key when the document was uploaded to the S3
+	// bucket (empty for legacy/manual entries). Download URLs are presigned
+	// on demand from this key.
+	Key string `json:"key,omitempty"`
 }
 
 type GovActivity struct {

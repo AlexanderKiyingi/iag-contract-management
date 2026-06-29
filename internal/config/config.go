@@ -53,6 +53,27 @@ type Config struct {
 	// (e.g. audit_entries.id BIGINT vs the current schema's TEXT). Set
 	// SEED_ON_STARTUP=true|false to override.
 	SeedOnStartup bool
+
+	// S3 is the S3-compatible object store (AWS S3 / Cloudflare R2 / MinIO)
+	// used for governance document uploads. Disabled when not fully configured.
+	S3 S3Config
+}
+
+// S3Config holds S3-compatible object-storage credentials for document uploads.
+// The service never proxies file bytes: it issues presigned URLs and the
+// browser uploads/downloads directly against the bucket.
+type S3Config struct {
+	Endpoint  string // host without scheme, e.g. s3.amazonaws.com or <acct>.r2.cloudflarestorage.com
+	Region    string
+	Bucket    string
+	AccessKey string
+	SecretKey string
+	UseSSL    bool
+}
+
+// Configured reports whether enough is set to issue presigned URLs.
+func (s S3Config) Configured() bool {
+	return s.Endpoint != "" && s.Bucket != "" && s.AccessKey != "" && s.SecretKey != ""
 }
 
 // Load reads configuration from env.
@@ -119,6 +140,14 @@ func Load() Config {
 		TrustedProxies:  proxies,
 		RequestTimeout:  time.Duration(envInt("REQUEST_TIMEOUT_SECONDS", 30)) * time.Second,
 		SeedOnStartup:   seedOnStartup,
+		S3: S3Config{
+			Endpoint:  envStr("S3_ENDPOINT", ""),
+			Region:    envStr("S3_REGION", "auto"),
+			Bucket:    envStr("S3_BUCKET", ""),
+			AccessKey: envStr("S3_ACCESS_KEY_ID", ""),
+			SecretKey: envStr("S3_SECRET_ACCESS_KEY", ""),
+			UseSSL:    !strings.EqualFold(envStr("S3_USE_SSL", "true"), "false"),
+		},
 	}
 }
 

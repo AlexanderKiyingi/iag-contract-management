@@ -5,6 +5,7 @@ import (
 	"github.com/alvor-technologies/iag-contract-management/internal/controllers"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+	"github.com/alvor-technologies/iag-contract-management/internal/objstore"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 )
 
@@ -43,7 +44,10 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 		Frontend:    controllers.NewFrontendController(store),
 		FeRes:       controllers.NewFrontendResourcesController(store, bus),
 		Contracts:   controllers.NewContractController(store, bus),
-		Governance:  controllers.NewGovernanceController(store, persistence.NewGovStore(pg.Pool), bus),
+		Governance: controllers.NewGovernanceController(
+			store, persistence.NewGovStore(pg.Pool), bus,
+			objstore.New(cfg.S3.Endpoint, cfg.S3.Region, cfg.S3.Bucket, cfg.S3.AccessKey, cfg.S3.SecretKey, cfg.S3.UseSSL),
+		),
 		Permissions: controllers.NewPermissionsController(store),
 		Uploads:     controllers.NewUploadsController(store),
 		Exports:     controllers.NewExportsController(store),

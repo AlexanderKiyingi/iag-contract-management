@@ -8,6 +8,7 @@ import (
 
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+	"github.com/alvor-technologies/iag-contract-management/internal/objstore"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
 )
@@ -18,10 +19,11 @@ type GovernanceController struct {
 	model  *models.Store
 	gov    *persistence.GovStore
 	events *events.Bus
+	docs   *objstore.Presigner // nil when object storage is unconfigured
 }
 
-func NewGovernanceController(model *models.Store, gov *persistence.GovStore, bus *events.Bus) *GovernanceController {
-	return &GovernanceController{model: model, gov: gov, events: bus}
+func NewGovernanceController(model *models.Store, gov *persistence.GovStore, bus *events.Bus, docs *objstore.Presigner) *GovernanceController {
+	return &GovernanceController{model: model, gov: gov, events: bus, docs: docs}
 }
 
 func govActor(c models.GovContract) string {

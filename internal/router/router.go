@@ -165,6 +165,12 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))
 	gov.PUT("/contracts/:id/closeout", wrap(mvc.Governance.UpsertCloseout))
 
+	// Document uploads (S3-compatible object storage; presigned URLs).
+	gov.POST("/contracts/:id/documents/presign", wrap(mvc.Governance.PresignContractDoc))
+	gov.POST("/contracts/:id/documents", wrap(mvc.Governance.AddContractDoc))
+	gov.DELETE("/contracts/:id/documents/:docId", wrap(mvc.Governance.DeleteContractDoc))
+	gov.GET("/documents/url", wrap(mvc.Governance.PresignDownloadDoc))
+
 	// Monthly report (MR): contractors, per-period progress reports, IPC
 	// valuations, and the executive-summary rollup.
 	gov.GET("/contractors", wrap(mvc.Governance.ListContractors))
