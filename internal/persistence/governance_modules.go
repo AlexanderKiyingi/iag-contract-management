@@ -115,6 +115,26 @@ func (s *GovStore) ListObligations(ctx context.Context) ([]models.GovObligation,
 	return out, rows.Err()
 }
 
+// ListObligationsByContract returns only the obligations for one contract,
+// so the contract-detail view no longer pulls the whole portfolio and filters
+// client-side.
+func (s *GovStore) ListObligationsByContract(ctx context.Context, contractID string) ([]models.GovObligation, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+obCols+` FROM gov_obligations WHERE contract_id=$1 ORDER BY due_date NULLS LAST, created_at`, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.GovObligation{}
+	for rows.Next() {
+		o, err := scanObligation(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *o)
+	}
+	return out, rows.Err()
+}
+
 func (s *GovStore) CreateObligation(ctx context.Context, o models.GovObligation) (*models.GovObligation, error) {
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO gov_obligations (id, contract_id, type, owner, due_date, frequency, evidence, status, escalation)

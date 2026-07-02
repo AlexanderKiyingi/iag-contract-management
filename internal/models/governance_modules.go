@@ -89,6 +89,58 @@ type RequisitionInput struct {
 
 // ---------------- Obligations ----------------
 
+// Obligation status is a canonical, closed set shared by the create form, the
+// dashboard/risk KPI filters, and this backend. "Open"/"In Progress"/"Overdue"
+// are outstanding; "Met"/"Waived" are settled. IsObligationOpen is the single
+// source of truth for the "open obligations" count.
+const (
+	ObligationOpen       = "Open"
+	ObligationInProgress = "In Progress"
+	ObligationMet        = "Met"
+	ObligationOverdue    = "Overdue"
+	ObligationWaived     = "Waived"
+)
+
+var obligationStatuses = map[string]bool{
+	ObligationOpen: true, ObligationInProgress: true, ObligationMet: true,
+	ObligationOverdue: true, ObligationWaived: true,
+}
+
+// ValidObligationStatus reports whether s is a known obligation status.
+func ValidObligationStatus(s string) bool { return obligationStatuses[s] }
+
+// NormalizeObligationStatus maps free-form/legacy status strings (the prototype
+// used "Compliant", "Due Soon", "Pending"…) onto the canonical set, defaulting
+// to Open when unrecognized.
+func NormalizeObligationStatus(s string) string {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "met", "compliant", "complete", "completed", "done", "closed":
+		return ObligationMet
+	case "waived", "n/a", "na":
+		return ObligationWaived
+	case "overdue", "breached", "late":
+		return ObligationOverdue
+	case "in progress", "in-progress", "due soon", "active":
+		return ObligationInProgress
+	case "open", "pending", "outstanding", "":
+		return ObligationOpen
+	default:
+		return ObligationOpen
+	}
+}
+
+// IsObligationOpen reports whether an obligation still needs attention (i.e. is
+// neither Met nor Waived). This is the definition the "open obligations" badge
+// and dashboard KPI must both use.
+func IsObligationOpen(status string) bool {
+	switch NormalizeObligationStatus(status) {
+	case ObligationMet, ObligationWaived:
+		return false
+	default:
+		return true
+	}
+}
+
 type GovObligation struct {
 	ID         string    `json:"id"`
 	ContractID string    `json:"contractId"`
@@ -260,4 +312,76 @@ type CloseoutInput struct {
 	UnresolvedVariations *int    `json:"unresolvedVariations"`
 	FinalReport          *bool   `json:"finalReport"`
 	Status               *string `json:"status"`
+}
+
+// ---------------- Zone-works milestone governance ----------------
+
+// MilestoneProfile carries the per zone-works milestone governance detail —
+// the checklist, scope tasks, deliverables, and comment thread — migrated out
+// of the frontend blob. Keyed by the milestone id it annotates.
+type MilestoneProfile struct {
+	MilestoneID  string                 `json:"milestoneId"`
+	ContractNo   string                 `json:"contractNo"`
+	Value        int64                  `json:"value"`
+	Checklist    []MilestoneCheckItem   `json:"checklist"`
+	Scope        []MilestoneScopeTask   `json:"scope"`
+	Deliverables []MilestoneDeliverable `json:"deliverables"`
+	Comments     []MilestoneComment     `json:"comments"`
+	CreatedAt    time.Time              `json:"createdAt"`
+	UpdatedAt    time.Time              `json:"updatedAt"`
+}
+
+type MilestoneCheckItem struct {
+	Item string `json:"item"`
+	Done bool   `json:"done"`
+	By   string `json:"by,omitempty"`
+	Date string `json:"date,omitempty"`
+}
+
+type MilestoneScopeTask struct {
+	Task   string `json:"task"`
+	Desc   string `json:"desc,omitempty"`
+	Target string `json:"target,omitempty"`
+	Status string `json:"status"`
+}
+
+type MilestoneDeliverable struct {
+	Name string `json:"name"`
+	Done bool   `json:"done"`
+}
+
+type MilestoneComment struct {
+	Author string `json:"author"`
+	Role   string `json:"role,omitempty"`
+	Date   string `json:"date,omitempty"`
+	Text   string `json:"text"`
+}
+
+// MilestoneProfileInput is the write shape; the milestone id comes from the path.
+type MilestoneProfileInput struct {
+	ContractNo   string                 `json:"contractNo"`
+	Value        int64                  `json:"value"`
+	Checklist    []MilestoneCheckItem   `json:"checklist"`
+	Scope        []MilestoneScopeTask   `json:"scope"`
+	Deliverables []MilestoneDeliverable `json:"deliverables"`
+	Comments     []MilestoneComment     `json:"comments"`
+}
+
+// ExecutionTracker records the execution stage a zone-works contract has
+// reached, the steps completed so far, and an optional execution date. Keyed
+// by contract number.
+type ExecutionTracker struct {
+	ContractNo    string    `json:"contractNo"`
+	Stage         int       `json:"stage"`
+	Steps         []string  `json:"steps"`
+	ExecutionDate *string   `json:"executionDate"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+// ExecutionTrackerInput is the write shape; the contract number comes from the path.
+type ExecutionTrackerInput struct {
+	Stage         int      `json:"stage"`
+	Steps         []string `json:"steps"`
+	ExecutionDate *string  `json:"executionDate"`
 }

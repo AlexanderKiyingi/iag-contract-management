@@ -170,6 +170,23 @@ func (g *GovernanceController) ListObligations(w http.ResponseWriter, r *http.Re
 	views.JSON(w, http.StatusOK, map[string]any{"items": list})
 }
 
+// ListContractObligations returns the obligations for a single contract.
+func (g *GovernanceController) ListContractObligations(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "obligations.read") {
+		return
+	}
+	c, err := g.gov.GetContract(r.Context(), pathSegmentAfter(r, "contracts"))
+	if g.handleErr(w, err) {
+		return
+	}
+	list, err := g.gov.ListObligationsByContract(r.Context(), c.ID)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
 func (g *GovernanceController) CreateObligation(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "obligations.create") {
 		return
@@ -187,9 +204,12 @@ func (g *GovernanceController) CreateObligation(w http.ResponseWriter, r *http.R
 		views.Error(w, http.StatusBadRequest, "type is required")
 		return
 	}
+	// Normalize onto the canonical set so legacy/free-form inputs ("Compliant",
+	// "Due Soon", "Pending") are stored consistently and match the KPI filters.
+	status := models.NormalizeObligationStatus(in.Status)
 	o := models.GovObligation{
 		ID: models.NewGovID("GOB"), ContractID: c.ID, Type: in.Type, Owner: in.Owner, DueDate: in.DueDate,
-		Frequency: defStr(in.Frequency, "Once"), Evidence: in.Evidence, Status: defStr(in.Status, "Open"), Escalation: in.Escalation,
+		Frequency: defStr(in.Frequency, "Once"), Evidence: in.Evidence, Status: status, Escalation: in.Escalation,
 	}
 	created, err := g.gov.CreateObligation(r.Context(), o)
 	if err != nil {
@@ -228,7 +248,7 @@ func (g *GovernanceController) PatchObligation(w http.ResponseWriter, r *http.Re
 		o.Evidence = in.Evidence
 	}
 	if in.Status != "" {
-		o.Status = in.Status
+		o.Status = models.NormalizeObligationStatus(in.Status)
 	}
 	if in.Escalation != "" {
 		o.Escalation = in.Escalation

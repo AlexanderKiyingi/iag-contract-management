@@ -195,6 +195,33 @@ func (g *GovernanceController) ListMilestones(w http.ResponseWriter, r *http.Req
 	views.JSON(w, http.StatusOK, map[string]any{"items": c.Milestones})
 }
 
+// ListAllMilestones returns every milestone across the portfolio (one
+// round-trip), so the frontend portfolio page needn't fan out per contract.
+func (g *GovernanceController) ListAllMilestones(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "milestones.read") {
+		return
+	}
+	list, err := g.gov.ListAllMilestones(r.Context())
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+// Counts serves the server-computed governance nav badge numbers.
+func (g *GovernanceController) Counts(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+		return
+	}
+	counts, err := g.gov.Counts(r.Context())
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, counts)
+}
+
 func (g *GovernanceController) CreateMilestone(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "milestones.create") {
 		return

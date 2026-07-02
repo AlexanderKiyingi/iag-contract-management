@@ -115,6 +115,10 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.DELETE("/contracts/:id", wrap(mvc.Governance.DeleteContract))
 	gov.GET("/contracts/:id/milestones", wrap(mvc.Governance.ListMilestones))
 	gov.POST("/contracts/:id/milestones", wrap(mvc.Governance.CreateMilestone))
+	// Portfolio-wide milestones (one round-trip; avoids per-contract fan-out).
+	gov.GET("/milestones", wrap(mvc.Governance.ListAllMilestones))
+	// Server-computed nav badge counts for the governance UI.
+	gov.GET("/counts", wrap(mvc.Governance.Counts))
 	gov.PATCH("/milestones/:id", wrap(mvc.Governance.PatchMilestone))
 	gov.PUT("/milestones/:id", wrap(mvc.Governance.PatchMilestone))
 	gov.DELETE("/milestones/:id", wrap(mvc.Governance.DeleteMilestone))
@@ -141,6 +145,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.POST("/requisitions/:id/convert", wrap(mvc.Governance.ConvertRequisition))
 
 	gov.GET("/obligations", wrap(mvc.Governance.ListObligations))
+	gov.GET("/contracts/:id/obligations", wrap(mvc.Governance.ListContractObligations))
 	gov.POST("/contracts/:id/obligations", wrap(mvc.Governance.CreateObligation))
 	gov.PATCH("/obligations/:id", wrap(mvc.Governance.PatchObligation))
 	gov.DELETE("/obligations/:id", wrap(mvc.Governance.DeleteObligation))
@@ -164,6 +169,12 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))
 	gov.PUT("/contracts/:id/closeout", wrap(mvc.Governance.UpsertCloseout))
+
+	// Zone-works milestone governance profiles + per-contract execution trackers.
+	gov.GET("/milestone-profiles/:id", wrap(mvc.Governance.GetMilestoneProfile))
+	gov.PUT("/milestone-profiles/:id", wrap(mvc.Governance.PutMilestoneProfile))
+	gov.GET("/execution/:contractNo", wrap(mvc.Governance.GetExecutionTracker))
+	gov.PUT("/execution/:contractNo", wrap(mvc.Governance.PutExecutionTracker))
 
 	// Document uploads (S3-compatible object storage; presigned URLs).
 	gov.POST("/contracts/:id/documents/presign", wrap(mvc.Governance.PresignContractDoc))
@@ -296,4 +307,6 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	// Reports
 	g.GET("/exports/contracts.csv", wrap(mvc.Exports.ExportContractsCSV))
 	g.GET("/exports/monthly-report.xlsx", wrap(mvc.Governance.ExportMonthlyReportXLSX))
+	// MR workbook import (HTTP counterpart of the import-mr CLI).
+	gov.POST("/import/monthly-report.xlsx", wrap(mvc.Governance.ImportMonthlyReport))
 }

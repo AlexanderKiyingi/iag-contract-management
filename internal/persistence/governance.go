@@ -136,6 +136,39 @@ func (s *GovStore) DeleteContract(ctx context.Context, id string) error {
 	return nil
 }
 
+// GovCounts holds the server-computed nav badge counts for the governance UI.
+type GovCounts struct {
+	Contracts    int `json:"contracts"`
+	Requisitions int `json:"requisitions"` // pending approval
+	Approvals    int `json:"approvals"`    // pending across payments + variations + requisitions
+	Obligations  int `json:"obligations"`  // open (not Met/Waived)
+	Milestones   int `json:"milestones"`   // total
+	Payments     int `json:"payments"`     // in-flight (not Paid)
+	Variations   int `json:"variations"`   // pending
+}
+
+// Counts computes all governance nav badge numbers in a single query round-trip.
+// "Attention" counts (requisitions/payments/variations/obligations) reflect
+// items still in flight; contracts/milestones are totals.
+func (s *GovStore) Counts(ctx context.Context) (GovCounts, error) {
+	var c GovCounts
+	err := s.pool.QueryRow(ctx, `
+		SELECT
+			(SELECT COUNT(*) FROM gov_contracts),
+			(SELECT COUNT(*) FROM gov_requisitions WHERE status = 'Pending Approval'),
+			(SELECT COUNT(*) FROM gov_obligations WHERE status NOT IN ('Met','Waived')),
+			(SELECT COUNT(*) FROM gov_milestones),
+			(SELECT COUNT(*) FROM gov_payments WHERE status <> 'Paid'),
+			(SELECT COUNT(*) FROM gov_variations WHERE status = 'Pending')`,
+	).Scan(&c.Contracts, &c.Requisitions, &c.Obligations, &c.Milestones, &c.Payments, &c.Variations)
+	if err != nil {
+		return c, err
+	}
+	// Approvals badge = everything awaiting a human decision.
+	c.Approvals = c.Requisitions + c.Payments + c.Variations
+	return c, nil
+}
+
 // ----- Milestones -----
 
 func (s *GovStore) ListMilestones(ctx context.Context, contractID string) ([]models.GovMilestone, error) {
@@ -143,6 +176,29 @@ func (s *GovStore) ListMilestones(ctx context.Context, contractID string) ([]mod
 		SELECT id, contract_id, name, value, target_date, status, scope, deliverables, checklist,
 		       docs, comments, inspection, completion_report, sort_order
 		FROM gov_milestones WHERE contract_id = $1 ORDER BY sort_order, created_at`, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.GovMilestone{}
+	for rows.Next() {
+		m, err := scanGovMilestone(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *m)
+	}
+	return out, rows.Err()
+}
+
+// ListAllMilestones returns every milestone across all contracts (each carries
+// its contractId), so the portfolio Milestones page and nav counts need one
+// round-trip instead of a per-contract fan-out.
+func (s *GovStore) ListAllMilestones(ctx context.Context) ([]models.GovMilestone, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, contract_id, name, value, target_date, status, scope, deliverables, checklist,
+		       docs, comments, inspection, completion_report, sort_order
+		FROM gov_milestones ORDER BY contract_id, sort_order, created_at`)
 	if err != nil {
 		return nil, err
 	}

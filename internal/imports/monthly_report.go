@@ -11,6 +11,7 @@ package imports
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -37,7 +38,21 @@ func ImportWorkbook(ctx context.Context, gov *persistence.GovStore, path, period
 		return Result{}, fmt.Errorf("open workbook: %w", err)
 	}
 	defer func() { _ = f.Close() }()
+	return importWorkbook(ctx, gov, f, period)
+}
 
+// ImportWorkbookFromReader is the HTTP-friendly entry point: it reads the
+// workbook bytes from r (e.g. a multipart upload) instead of a filesystem path.
+func ImportWorkbookFromReader(ctx context.Context, gov *persistence.GovStore, r io.Reader, period string) (Result, error) {
+	f, err := excelize.OpenReader(r)
+	if err != nil {
+		return Result{}, fmt.Errorf("open workbook: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	return importWorkbook(ctx, gov, f, period)
+}
+
+func importWorkbook(ctx context.Context, gov *persistence.GovStore, f *excelize.File, period string) (Result, error) {
 	var res Result
 	contractorIDs := map[string]string{} // lower(name) -> id
 
