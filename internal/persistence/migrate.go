@@ -34,8 +34,16 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	// so fresh and legacy DBs both succeed. Statements are issued separately
 	// because pgx's default extended protocol only handles one statement per
 	// Exec.
+	// This service owns the `contracts` schema on the shared Railway database.
+	// The ledger is schema-qualified so it can never collide with another
+	// service's global public.schema_migrations (the collision that caused
+	// cross-service boot failures). Connect pins search_path to `contracts,
+	// public`.
+	if _, err := pool.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS contracts`); err != nil {
+		return fmt.Errorf("create schema contracts: %w", err)
+	}
 	if _, err := pool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS schema_migrations (
+		CREATE TABLE IF NOT EXISTS contracts.schema_migrations (
 			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			checksum TEXT NOT NULL DEFAULT ''
@@ -43,7 +51,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	`); err != nil {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
-	if _, err := pool.Exec(ctx, `ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`); err != nil {
+	if _, err := pool.Exec(ctx, `ALTER TABLE contracts.schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`); err != nil {
 		return fmt.Errorf("ensure schema_migrations.checksum: %w", err)
 	}
 
@@ -52,21 +60,31 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("read migrations: %w", err)
 	}
 	var files []string
+	var versions []string
 	for _, e := range entries {
 		name := e.Name()
 		if e.IsDir() || !strings.HasSuffix(name, ".up.sql") {
 			continue
 		}
 		files = append(files, name)
+		versions = append(versions, strings.TrimSuffix(name, ".up.sql"))
 	}
 	sort.Strings(files)
+
+	// One-time cutover from the shared global public.schema_migrations: mark this
+	// service's already-applied versions as applied in the per-service ledger so
+	// migrations are not re-run against tables that already exist in public.
+	// No-op on a fresh database.
+	if err := seedFromLegacyLedger(ctx, pool, versions); err != nil {
+		return fmt.Errorf("seed from legacy ledger: %w", err)
+	}
 
 	for _, name := range files {
 		version := strings.TrimSuffix(name, ".up.sql")
 
 		var applied bool
 		if err := pool.QueryRow(ctx,
-			`SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)`,
+			`SELECT EXISTS(SELECT 1 FROM contracts.schema_migrations WHERE version = $1)`,
 			version,
 		).Scan(&applied); err != nil {
 			return fmt.Errorf("check %s: %w", version, err)
@@ -96,7 +114,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 			return fmt.Errorf("%s exec: %w", version, err)
 		}
 		if _, err := tx.Exec(ctx,
-			`INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			`INSERT INTO contracts.schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
 			version, checksum,
 		); err != nil {
 			_ = tx.Rollback(ctx)
@@ -107,4 +125,30 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 	return nil
+}
+
+// seedFromLegacyLedger copies this service's shipped migration versions from a
+// legacy global public.schema_migrations (if present) into the per-service
+// ledger. It references only the `version` column and is idempotent via ON
+// CONFLICT, so it is safe to keep running. No-op on a fresh database.
+func seedFromLegacyLedger(ctx context.Context, pool *pgxpool.Pool, versions []string) error {
+	if len(versions) == 0 {
+		return nil
+	}
+	var hasLegacy bool
+	if err := pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.tables
+			WHERE table_schema = 'public' AND table_name = 'schema_migrations'
+		)`).Scan(&hasLegacy); err != nil {
+		return err
+	}
+	if !hasLegacy {
+		return nil
+	}
+	_, err := pool.Exec(ctx, `
+		INSERT INTO contracts.schema_migrations (version)
+		SELECT version FROM public.schema_migrations WHERE version = ANY($1)
+		ON CONFLICT (version) DO NOTHING`, versions)
+	return err
 }

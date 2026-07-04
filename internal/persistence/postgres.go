@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -15,6 +16,14 @@ func Connect(ctx context.Context, databaseURL string) (*Postgres, error) {
 	cfg, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
+	}
+	// Resolve unqualified names to this service's own schema first, falling back
+	// to public so legacy tables that still live there keep resolving. On the
+	// shared Railway database this isolates contract-management from the global
+	// public namespace and its single global schema_migrations ledger.
+	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		_, err := conn.Exec(ctx, `SET search_path TO contracts, public`)
+		return err
 	}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
