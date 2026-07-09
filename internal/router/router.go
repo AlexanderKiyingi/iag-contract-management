@@ -225,6 +225,14 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	gov.GET("/summary", wrap(mvc.Governance.MonthlySummaryReport))
 
+	// Coffee supply (off-take) contracts — a commodity contract domain distinct
+	// from the construction-oriented governance contracts above. Reuses contracts.*
+	// permissions.
+	g.GET("/supply-contracts", wrap(mvc.Supply.List))
+	g.POST("/supply-contracts", wrap(mvc.Supply.Create))
+	g.GET("/supply-contracts/:id", wrap(mvc.Supply.Get))
+	g.POST("/supply-contracts/:id/sign", wrap(mvc.Supply.Sign))
+
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
