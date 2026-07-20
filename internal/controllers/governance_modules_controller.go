@@ -45,11 +45,21 @@ func (g *GovernanceController) CreateRequisition(w http.ResponseWriter, r *http.
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if strings.TrimSpace(in.No) == "" || strings.TrimSpace(in.Title) == "" {
-		views.Error(w, http.StatusBadRequest, "no and title are required")
+	if strings.TrimSpace(in.Title) == "" {
+		views.Error(w, http.StatusBadRequest, "title is required")
 		return
 	}
-	rq := models.NewRequisition(models.NewGovID("GREQ"), strings.TrimSpace(in.No), strings.TrimSpace(in.Title), in.Estimate, g.actor(r, ""), nowStamp())
+	// Requisition number is auto-generated when left blank.
+	no := strings.TrimSpace(in.No)
+	if no == "" {
+		gen, err := g.gov.NextRequisitionNo(r.Context())
+		if err != nil {
+			views.WriteError(w, err)
+			return
+		}
+		no = gen
+	}
+	rq := models.NewRequisition(models.NewGovID("GREQ"), no, strings.TrimSpace(in.Title), in.Estimate, g.actor(r, ""), nowStamp())
 	rq.Department, rq.Requester, rq.Type = in.Department, in.Requester, in.Type
 	rq.ProcurementMethod, rq.Supplier, rq.BudgetCode = in.ProcurementMethod, in.Supplier, in.BudgetCode
 	rq.Urgency, rq.Justification = in.Urgency, in.Justification

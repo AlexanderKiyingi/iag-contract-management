@@ -132,9 +132,20 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if strings.TrimSpace(in.Number) == "" || strings.TrimSpace(in.Name) == "" {
-		views.Error(w, http.StatusBadRequest, "number and name are required")
+	if strings.TrimSpace(in.Name) == "" {
+		views.Error(w, http.StatusBadRequest, "name is required")
 		return
+	}
+	// The contract number (human code) is auto-generated when left blank, so
+	// staff don't have to invent one; they may still supply their own.
+	number := strings.TrimSpace(in.Number)
+	if number == "" {
+		gen, err := g.gov.NextContractNumber(r.Context())
+		if err != nil {
+			views.WriteError(w, err)
+			return
+		}
+		number = gen
 	}
 	status := in.Status
 	if status == "" {
@@ -154,7 +165,7 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 	}
 	c := models.GovContract{
 		ID:                models.NewGovID("GCT"),
-		Number:            strings.TrimSpace(in.Number),
+		Number:            number,
 		Name:              strings.TrimSpace(in.Name),
 		Contractor:        in.Contractor,
 		ContractorID:      in.ContractorID,

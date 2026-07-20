@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -11,6 +12,36 @@ import (
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 )
+
+// NextContractNumber returns the next auto-generated governance contract number
+// of the form CT-<year>-NNNN, based on the highest existing numeric suffix among
+// contracts already using that year's prefix. The number column is UNIQUE, so a
+// rare concurrent collision just fails the insert (the caller can retry).
+func (s *GovStore) NextContractNumber(ctx context.Context) (string, error) {
+	prefix := fmt.Sprintf("CT-%d-", time.Now().UTC().Year())
+	var maxN int
+	err := s.pool.QueryRow(ctx, `
+		SELECT COALESCE(MAX(CAST(substring(number from '[0-9]+$') AS INTEGER)), 0)
+		FROM gov_contracts WHERE number LIKE $1`, prefix+"%").Scan(&maxN)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s%04d", prefix, maxN+1), nil
+}
+
+// NextRequisitionNo returns the next auto-generated requisition number of the
+// form REQ-<year>-NNNN.
+func (s *GovStore) NextRequisitionNo(ctx context.Context) (string, error) {
+	prefix := fmt.Sprintf("REQ-%d-", time.Now().UTC().Year())
+	var maxN int
+	err := s.pool.QueryRow(ctx, `
+		SELECT COALESCE(MAX(CAST(substring(no from '[0-9]+$') AS INTEGER)), 0)
+		FROM gov_requisitions WHERE no LIKE $1`, prefix+"%").Scan(&maxN)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s%04d", prefix, maxN+1), nil
+}
 
 // ErrGovNotFound is returned when a governance contract/milestone is absent.
 var ErrGovNotFound = errors.New("not found")
