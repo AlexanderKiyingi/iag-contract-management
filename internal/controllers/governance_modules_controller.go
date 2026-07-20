@@ -153,7 +153,7 @@ func (g *GovernanceController) ConvertRequisition(w http.ResponseWriter, r *http
 	}
 	g.publishPMProjectLink(r, *created, events.TypeContractCreated)
 	if g.chat != nil {
-		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, created.ID, contractThreadTitle(*created))
+		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, *created)
 	}
 	rq.LinkedContract = &created.ID
 	rq.Status = "Converted"

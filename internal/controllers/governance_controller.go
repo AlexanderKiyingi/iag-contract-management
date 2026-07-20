@@ -40,26 +40,41 @@ func govActor(c models.GovContract) string {
 // ensureContractThread find-or-creates a contract's chat discussion thread and
 // persists the conversation id back onto the contract. Runs in the background,
 // best-effort, so a chat outage never blocks or fails contract creation.
-func (g *GovernanceController) ensureContractThread(actorUserID, contractID, title string) {
+// Participants seeded: the creating user and (if the contract is linked to a
+// contractor with a platform login) that contractor, so they see the thread.
+func (g *GovernanceController) ensureContractThread(actorUserID string, c models.GovContract) {
 	if g.chat == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
+
+	seen := map[string]bool{}
 	var parts []string
-	if strings.TrimSpace(actorUserID) != "" {
-		parts = append(parts, actorUserID)
+	add := func(uid string) {
+		uid = strings.TrimSpace(uid)
+		if uid != "" && !seen[uid] {
+			seen[uid] = true
+			parts = append(parts, uid)
+		}
 	}
-	convID, err := g.chat.EnsureContractThread(ctx, contractID, title, parts)
+	add(actorUserID)
+	if c.ContractorID != "" {
+		if k, err := g.gov.GetContractor(ctx, c.ContractorID); err == nil && k != nil {
+			add(k.PlatformUserID)
+		}
+	}
+
+	convID, err := g.chat.EnsureContractThread(ctx, c.ID, contractThreadTitle(c), parts)
 	if err != nil {
-		slog.Warn("contract chat thread create failed", "contract", contractID, "err", err)
+		slog.Warn("contract chat thread create failed", "contract", c.ID, "err", err)
 		return
 	}
 	if convID == "" {
 		return
 	}
-	if err := g.gov.SetContractConversationID(ctx, contractID, convID); err != nil {
-		slog.Warn("persist contract conversation id failed", "contract", contractID, "err", err)
+	if err := g.gov.SetContractConversationID(ctx, c.ID, convID); err != nil {
+		slog.Warn("persist contract conversation id failed", "contract", c.ID, "err", err)
 	}
 }
 
@@ -170,7 +185,7 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 	g.publishStatus(r, *created, "", created.Status)
 	g.publishPMProjectLink(r, *created, events.TypeContractCreated)
 	if g.chat != nil {
-		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, created.ID, contractThreadTitle(*created))
+		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, *created)
 	}
 	views.JSON(w, http.StatusCreated, created)
 }
