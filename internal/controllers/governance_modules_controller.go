@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
 )
@@ -51,6 +53,7 @@ func (g *GovernanceController) CreateRequisition(w http.ResponseWriter, r *http.
 	rq.Department, rq.Requester, rq.Type = in.Department, in.Requester, in.Type
 	rq.ProcurementMethod, rq.Supplier, rq.BudgetCode = in.ProcurementMethod, in.Supplier, in.BudgetCode
 	rq.Urgency, rq.Justification = in.Urgency, in.Justification
+	rq.PMProjectID = strings.TrimSpace(in.PMProjectID)
 	if in.Docs != nil {
 		rq.Docs = in.Docs
 	}
@@ -76,6 +79,10 @@ func (g *GovernanceController) AdvanceRequisition(w http.ResponseWriter, r *http
 	var in models.WorkflowActionInput
 	_ = decodeJSON(r, &in)
 	approved, aerr := rq.Advance(g.actor(r, in.By), nowStamp())
+	if errors.Is(aerr, models.ErrSelfSuccession) {
+		views.Error(w, http.StatusForbidden, aerr.Error())
+		return
+	}
 	if aerr != nil {
 		views.Error(w, http.StatusUnprocessableEntity, "requisition is not pending approval")
 		return
@@ -135,12 +142,18 @@ func (g *GovernanceController) ConvertRequisition(w http.ResponseWriter, r *http
 	contract := models.GovContract{
 		ID: models.NewGovID("GCT"), Number: rq.No, Name: rq.Title, Contractor: rq.Supplier,
 		Type: rq.Type, Department: rq.Department, Value: rq.Estimate, Status: models.GovDraft,
-		Documents: rq.Docs, Activity: []models.GovActivity{{Date: nowStamp(), Actor: g.actor(r, ""), Action: "Created from requisition " + rq.No}},
+		PMProjectID: rq.PMProjectID, // inherit the requisition's parent PM project
+		Documents:   rq.Docs,
+		Activity:    []models.GovActivity{{Date: nowStamp(), Actor: g.actor(r, ""), Action: "Created from requisition " + rq.No}},
 	}
 	created, err := g.gov.CreateContract(r.Context(), contract)
 	if err != nil {
 		views.WriteError(w, err)
 		return
+	}
+	g.publishPMProjectLink(r, *created, events.TypeContractCreated)
+	if g.chat != nil {
+		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, created.ID, contractThreadTitle(*created))
 	}
 	rq.LinkedContract = &created.ID
 	rq.Status = "Converted"

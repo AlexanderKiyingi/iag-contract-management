@@ -33,6 +33,9 @@ type Config struct {
 	ServiceClientID     string
 	ServiceClientSecret string
 	AuthTokenURL        string
+	// ChatAPIURL is the iag-chat base (gateway: .../api/v1/chat); empty disables
+	// contract discussion threads.
+	ChatAPIURL string
 
 	AllowedOrigins  []string
 	RateLimitPerMin int
@@ -133,6 +136,7 @@ func Load() Config {
 		ServiceClientID:     envStr("SERVICE_CLIENT_ID", "iag-contract-management"),
 		ServiceClientSecret: envStr("SERVICE_CLIENT_SECRET", ""),
 		AuthTokenURL:        envStr("AUTH_TOKEN_URL", strings.TrimRight(issuer, "/")+"/oauth/token"),
+		ChatAPIURL:          strings.TrimRight(strings.TrimSpace(envStr("CHAT_API_URL", "")), "/"),
 
 		AllowedOrigins:  allowed,
 		RateLimitPerMin: envInt("RATE_LIMIT_PER_MINUTE", 120),

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -51,9 +52,21 @@ func (g *GovernanceController) CreatePayment(w http.ResponseWriter, r *http.Requ
 	if in.Amount != nil {
 		amount = *in.Amount
 	}
+	if amount < 0 {
+		views.Error(w, http.StatusBadRequest, "amount must not be negative")
+		return
+	}
 	retention := contract.Retention
 	if in.Retention != nil {
 		retention = *in.Retention
+	}
+	// Retention is a percentage; clamp so payable = amount*(100-retention)/100
+	// can never be negative or exceed the gross amount.
+	if retention < 0 {
+		retention = 0
+	}
+	if retention > 100 {
+		retention = 100
 	}
 	p := models.NewPayment(models.NewGovID("GPAY"), ms.ID, contract.ID, amount, retention)
 	created, err := g.gov.CreatePayment(r.Context(), p)
@@ -106,6 +119,10 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 	_ = decodeJSON(r, &in)
 
 	_, authorized, paid, aerr := p.Advance(g.actor(r, in.By), nowStamp())
+	if errors.Is(aerr, models.ErrSelfSuccession) {
+		views.Error(w, http.StatusForbidden, aerr.Error())
+		return
+	}
 	if aerr != nil {
 		views.Error(w, http.StatusUnprocessableEntity, "payment already fully processed")
 		return
@@ -141,6 +158,12 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 			ms.Status = models.MSPaid
 			_, _ = g.gov.UpdateMilestone(r.Context(), *ms)
 		}
+	}
+	if authorized {
+		g.postContractSystem(updated.ContractID, "Payment authorized (by "+g.actor(r, in.By)+")")
+	}
+	if paid {
+		g.postContractSystem(updated.ContractID, "Payment marked paid")
 	}
 	views.JSON(w, http.StatusOK, updated)
 }
@@ -231,6 +254,10 @@ func (g *GovernanceController) AdvanceVariation(w http.ResponseWriter, r *http.R
 	var in models.WorkflowActionInput
 	_ = decodeJSON(r, &in)
 	approved, aerr := v.Advance(g.actor(r, in.By), nowStamp())
+	if errors.Is(aerr, models.ErrSelfSuccession) {
+		views.Error(w, http.StatusForbidden, aerr.Error())
+		return
+	}
 	if aerr != nil {
 		views.Error(w, http.StatusUnprocessableEntity, "variation is not pending")
 		return
@@ -250,6 +277,8 @@ func (g *GovernanceController) AdvanceVariation(w http.ResponseWriter, r *http.R
 				"amount": updated.Amount, "extensionDays": updated.ExtensionDays,
 			}, updated.ID)
 		}
+		g.postContractSystem(updated.ContractID,
+			"Variation "+strings.TrimSpace(updated.Number)+" approved")
 	}
 	views.JSON(w, http.StatusOK, updated)
 }

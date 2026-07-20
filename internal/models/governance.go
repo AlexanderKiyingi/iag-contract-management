@@ -115,6 +115,16 @@ const (
 	MSCompleted    = "Completed"
 )
 
+// ValidMilestoneStatus reports whether s is one of the known milestone states.
+func ValidMilestoneStatus(s string) bool {
+	switch s {
+	case MSPending, MSInProgress, MSVerification, MSInspection,
+		MSApproved, MSRejected, MSPaid, MSCompleted:
+		return true
+	}
+	return false
+}
+
 // ----- nested value objects -----
 
 type GovDoc struct {
@@ -218,11 +228,18 @@ type GovContract struct {
 	Received          int64           `json:"received"`
 	VariationTotal    int64           `json:"variationTotal"`
 	PlannedCompletion string          `json:"plannedCompletion,omitempty"`
-	Documents         []GovDoc        `json:"documents"`
-	Activity          []GovActivity   `json:"activity"`
-	Milestones        []GovMilestone  `json:"milestones,omitempty"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	UpdatedAt         time.Time       `json:"updatedAt"`
+	// PMProjectID links this contract to a parent Project Management project.
+	// A Project owns Contracts; the project-management consumer keys on this to
+	// attach the contract to its project.
+	PMProjectID string          `json:"pmProjectId,omitempty"`
+	// ConversationID is the iag-chat discussion thread for this contract,
+	// find-or-created on contract creation. Empty when chat is not configured.
+	ConversationID string       `json:"conversationId,omitempty"`
+	Documents      []GovDoc      `json:"documents"`
+	Activity    []GovActivity   `json:"activity"`
+	Milestones  []GovMilestone  `json:"milestones,omitempty"`
+	CreatedAt   time.Time       `json:"createdAt"`
+	UpdatedAt   time.Time       `json:"updatedAt"`
 }
 
 // ----- inputs -----
@@ -247,6 +264,7 @@ type GovContractInput struct {
 	Received          int64           `json:"received"`
 	VariationTotal    int64           `json:"variationTotal"`
 	PlannedCompletion string          `json:"plannedCompletion"`
+	PMProjectID       string          `json:"pmProjectId"`
 	Documents         []GovDoc        `json:"documents"`
 }
 
@@ -269,6 +287,7 @@ type GovContractPatch struct {
 	Received          *int64           `json:"received,omitempty"`
 	VariationTotal    *int64           `json:"variationTotal,omitempty"`
 	PlannedCompletion *string          `json:"plannedCompletion,omitempty"`
+	PMProjectID       *string          `json:"pmProjectId,omitempty"`
 	Documents         *[]GovDoc        `json:"documents,omitempty"`
 }
 

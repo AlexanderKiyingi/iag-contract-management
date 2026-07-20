@@ -28,8 +28,11 @@ type GovRequisition struct {
 	Justification     string              `json:"justification,omitempty"`
 	Docs              []GovDoc            `json:"docs"`
 	LinkedContract    *string             `json:"linkedContract,omitempty"`
-	CreatedAt         time.Time           `json:"createdAt"`
-	UpdatedAt         time.Time           `json:"updatedAt"`
+	// PMProjectID is carried onto the contract this requisition converts into,
+	// so the resulting contract inherits its parent Project Management project.
+	PMProjectID string    `json:"pmProjectId,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // NewRequisition opens a requisition with the raiser recorded as the first
@@ -61,6 +64,12 @@ func (rq *GovRequisition) Advance(by, date string) (approved bool, err error) {
 		rq.Status = "Approved"
 		return true, nil
 	}
+	// Four-eyes: the actor who approved the prior stage cannot approve this one.
+	if rq.Stage > 0 && !isSystemActor(by) {
+		if prev := strings.TrimSpace(rq.Approvals[rq.Stage-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
+			return false, ErrSelfSuccession
+		}
+	}
 	rq.Approvals[rq.Stage] = VariationApproval{Step: RequisitionStages[rq.Stage], By: by, Date: date}
 	rq.Stage++
 	if rq.Stage >= len(RequisitionStages) {
@@ -84,6 +93,7 @@ type RequisitionInput struct {
 	BudgetCode        string   `json:"budgetCode"`
 	Urgency           string   `json:"urgency"`
 	Justification     string   `json:"justification"`
+	PMProjectID       string   `json:"pmProjectId"`
 	Docs              []GovDoc `json:"docs"`
 }
 

@@ -22,8 +22,9 @@ func NewExportsController(model *models.Store) *ExportsController {
 // `name` or `remarks` are quoted per RFC 4180 instead of breaking row
 // alignment (the previous fmt.Fprintf path did).
 func (c *ExportsController) ExportContractsCSV(w http.ResponseWriter, r *http.Request) {
-	if !c.model.HasPermissionCtx(r.Context(), "contracts.read") &&
-		!c.model.HasPermissionCtx(r.Context(), "reports.create") {
+	// Exporting the full contract register (incl. financials) requires contract
+	// read — a reports-only permission must not be able to dump contracts.
+	if !c.model.HasPermissionCtx(r.Context(), "contracts.read") {
 		views.WriteError(w, models.ErrForbidden)
 		return
 	}

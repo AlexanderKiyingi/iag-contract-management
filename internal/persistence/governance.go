@@ -39,7 +39,7 @@ func jsonb(v any) ([]byte, error) {
 const govContractCols = `id, number, name, contractor, contractor_id, contractor_contact, type,
 	start_date, end_date, location, pm, department, value, retention, status,
 	execution_status, progress, received, variation_total, planned_completion,
-	documents, activity, created_at, updated_at`
+	documents, activity, created_at, updated_at, pm_project_id, conversation_id`
 
 func (s *GovStore) ListContracts(ctx context.Context) ([]models.GovContract, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+govContractCols+` FROM gov_contracts ORDER BY created_at DESC`)
@@ -87,13 +87,13 @@ func (s *GovStore) CreateContract(ctx context.Context, c models.GovContract) (*m
 		INSERT INTO gov_contracts
 			(id, number, name, contractor, contractor_id, contractor_contact, type, start_date, end_date,
 			 location, pm, department, value, retention, status, execution_status, progress, received,
-			 variation_total, planned_completion, documents, activity)
+			 variation_total, planned_completion, documents, activity, pm_project_id, conversation_id)
 		VALUES ($1,$2,$3,$4,NULLIF($5,''),$6,$7,NULLIF($8,''),NULLIF($9,''),$10,$11,$12,$13,$14,$15,$16,$17,$18,
-		        $19,NULLIF($20,''),$21::jsonb,$22::jsonb)
+		        $19,NULLIF($20,''),$21::jsonb,$22::jsonb,$23,$24)
 		RETURNING `+govContractCols,
 		c.ID, c.Number, c.Name, c.Contractor, c.ContractorID, c.ContractorContact, c.Type, c.StartDate, c.EndDate,
 		c.Location, c.PM, c.Department, c.Value, c.Retention, string(c.Status), exec, c.Progress, c.Received,
-		c.VariationTotal, c.PlannedCompletion, docs, act)
+		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID)
 	return scanGovContract(row)
 }
 
@@ -112,17 +112,26 @@ func (s *GovStore) UpdateContract(ctx context.Context, c models.GovContract) (*m
 			start_date=NULLIF($7,''), end_date=NULLIF($8,''), location=$9, pm=$10, department=$11,
 			value=$12, retention=$13, status=$14, execution_status=$15, progress=$16, received=$17,
 			variation_total=$18, planned_completion=NULLIF($19,''), documents=$20::jsonb, activity=$21::jsonb,
-			updated_at=NOW()
+			pm_project_id=$22, conversation_id=$23, updated_at=NOW()
 		WHERE id=$1
 		RETURNING `+govContractCols,
 		c.ID, c.Name, c.Contractor, c.ContractorID, c.ContractorContact, c.Type, c.StartDate, c.EndDate,
 		c.Location, c.PM, c.Department, c.Value, c.Retention, string(c.Status), exec, c.Progress, c.Received,
-		c.VariationTotal, c.PlannedCompletion, docs, act)
+		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID)
 	cc, err := scanGovContract(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
 	}
 	return cc, err
+}
+
+// SetContractConversationID records the chat thread id, but only if one is not
+// already set (so a re-run never clobbers an existing thread).
+func (s *GovStore) SetContractConversationID(ctx context.Context, id, convID string) error {
+	_, err := s.pool.Exec(ctx,
+		`UPDATE gov_contracts SET conversation_id=$2, updated_at=NOW() WHERE id=$1 AND conversation_id=''`,
+		id, convID)
+	return err
 }
 
 func (s *GovStore) DeleteContract(ctx context.Context, id string) error {
@@ -294,7 +303,7 @@ func scanGovContract(row pgx.Row) (*models.GovContract, error) {
 	if err := row.Scan(&c.ID, &c.Number, &c.Name, &c.Contractor, &contractorID, &c.ContractorContact, &c.Type,
 		&startDate, &endDate, &c.Location, &c.PM, &c.Department, &c.Value, &c.Retention, &status,
 		&execStatus, &c.Progress, &c.Received, &c.VariationTotal, &plannedCompletion,
-		&docs, &act, &created, &updated); err != nil {
+		&docs, &act, &created, &updated, &c.PMProjectID, &c.ConversationID); err != nil {
 		return nil, err
 	}
 	c.Status = models.GovStatus(status)

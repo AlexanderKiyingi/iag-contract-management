@@ -4,27 +4,32 @@
 #
 #   docker build -f services/commercial/contract-management/Dockerfile.monorepo --target monorepo .
 
-FROM golang:1.24-alpine AS base
+FROM golang:1.25-alpine AS base
 RUN apk add --no-cache ca-certificates
 ENV PLATFORM_GO_DEP=/deps/platform-go
+ENV CHAT_CLIENT_DEP=/deps/chat-client
 
 FROM base AS platform-go-copy
 COPY shared/platform-go ${PLATFORM_GO_DEP}
+COPY shared/services/chat-client ${CHAT_CLIENT_DEP}
 
 FROM base AS build-monorepo
 COPY --from=platform-go-copy ${PLATFORM_GO_DEP} ${PLATFORM_GO_DEP}
+COPY --from=platform-go-copy ${CHAT_CLIENT_DEP} ${CHAT_CLIENT_DEP}
 WORKDIR /src/services/commercial/contract-management
 COPY services/commercial/contract-management/go.mod services/commercial/contract-management/go.sum ./
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
+    -replace=github.com/alvor-technologies/iag-chat-client=${CHAT_CLIENT_DEP} \
     && go mod download
 COPY services/commercial/contract-management/ .
 # The COPY above restored go.mod from the source tree, which still has the
-# meta-repo-only relative `replace => ../../../shared/platform-go`. From this
-# WORKDIR that resolves to /src/shared/platform-go (not present in the
-# container — the vendored module is at ${PLATFORM_GO_DEP}). Re-apply the
-# replace so `go build` finds the dependency.
+# meta-repo-only relative `replace => ../../../shared/...` paths. From this
+# WORKDIR those resolve to /src/shared/... (not present in the container — the
+# vendored modules are at ${PLATFORM_GO_DEP} / ${CHAT_CLIENT_DEP}). Re-apply the
+# replaces so `go build` finds the dependencies.
 RUN set -eu; \
-    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP}; \
+    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=${PLATFORM_GO_DEP} \
+        -replace=github.com/alvor-technologies/iag-chat-client=${CHAT_CLIENT_DEP}; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/alvor-technologies/iag-contract-management/internal/chat"
 	"github.com/alvor-technologies/iag-contract-management/internal/config"
 	"github.com/alvor-technologies/iag-contract-management/internal/controllers"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
@@ -48,6 +49,7 @@ func NewMVC(cfg config.Config, pg *persistence.Postgres, bus *events.Bus) *MVC {
 		Governance: controllers.NewGovernanceController(
 			store, persistence.NewGovStore(pg.Pool), bus,
 			objstore.New(cfg.S3.Endpoint, cfg.S3.Region, cfg.S3.Bucket, cfg.S3.AccessKey, cfg.S3.SecretKey, cfg.S3.UseSSL),
+			chat.New(cfg),
 		),
 		Supply:      controllers.NewSupplyContractController(store, persistence.NewSupplyStore(pg.Pool)),
 		Permissions: controllers.NewPermissionsController(store),

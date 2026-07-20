@@ -71,6 +71,17 @@ func (c *ContractController) Patch(w http.ResponseWriter, r *http.Request) {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	// A contractor-scoped editor (passed CanEditContract but not a full mutator)
+	// may only report progress/remarks/workers — never financials, status,
+	// supervisor, or contract identity.
+	if !c.model.CanMutateCtx(r.Context()) && patch.TouchesPrivilegedFields() {
+		views.Error(w, http.StatusForbidden, "contractors may only update progress, remarks, and worker count")
+		return
+	}
+	if patch.Status != nil && !patch.Status.Valid() {
+		views.Error(w, http.StatusBadRequest, "invalid contract status")
+		return
+	}
 	var previous models.ContractStatus
 	if patch.Status != nil {
 		if existing, err := c.model.FindContract(no); err == nil {

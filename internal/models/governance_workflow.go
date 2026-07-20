@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -11,6 +12,19 @@ import (
 
 // ErrWorkflowComplete is returned when an advance is attempted past the end.
 var ErrWorkflowComplete = errors.New("workflow already complete")
+
+// ErrSelfSuccession enforces four-eyes: the actor who completed the previous
+// stage of a workflow may not also complete the next one. This is the
+// segregation-of-duties control the single `<module>.update` permission cannot
+// express on its own.
+var ErrSelfSuccession = errors.New("segregation of duties: a different approver is required to advance this stage")
+
+// isSystemActor treats empty / "system" actors as non-human (automated or
+// unattributed) advances that four-eyes should not block.
+func isSystemActor(by string) bool {
+	b := strings.TrimSpace(by)
+	return b == "" || strings.EqualFold(b, "system")
+}
 
 // PaymentStages is the ordered payment workflow.
 var PaymentStages = []string{"PM Approval", "Finance Review", "Payment Authorization", "Paid"}
@@ -72,6 +86,12 @@ func (p *GovPayment) Advance(by, date string) (completed int, authorized, paid b
 		}
 	}
 	completed = p.Stage
+	// Four-eyes: the actor who completed the prior stage cannot complete this one.
+	if completed > 0 && !isSystemActor(by) {
+		if prev := strings.TrimSpace(p.History[completed-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
+			return -1, false, false, ErrSelfSuccession
+		}
+	}
 	p.History[completed] = PaymentStep{Step: PaymentStages[completed], By: by, Date: date}
 	p.Stage++
 	if p.Stage >= len(PaymentStages) {
@@ -135,6 +155,12 @@ func (v *GovVariation) Advance(by, date string) (approved bool, err error) {
 		v.Approvals = make([]VariationApproval, len(VariationStages))
 		for i, s := range VariationStages {
 			v.Approvals[i].Step = s
+		}
+	}
+	// Four-eyes: the actor who approved the prior stage cannot approve this one.
+	if v.Stage > 0 && !isSystemActor(by) {
+		if prev := strings.TrimSpace(v.Approvals[v.Stage-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
+			return false, ErrSelfSuccession
 		}
 	}
 	v.Approvals[v.Stage] = VariationApproval{Step: VariationStages[v.Stage], By: by, Date: date}

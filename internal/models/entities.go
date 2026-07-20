@@ -169,6 +169,24 @@ type ContractPatch struct {
 	Workers *int            `json:"workers,omitempty"`
 }
 
+// Valid reports whether the status is one of the known legacy contract states.
+func (s ContractStatus) Valid() bool {
+	switch s {
+	case StatusPlanning, StatusActive, StatusOnHold, StatusComplete:
+		return true
+	}
+	return false
+}
+
+// TouchesPrivilegedFields reports whether the patch changes any field a
+// contractor-scoped editor must not control (financials, status, priority,
+// supervisor, zone, name). Contractors may only report progress, remarks, and
+// worker count on contracts they supervise.
+func (p ContractPatch) TouchesPrivilegedFields() bool {
+	return p.Name != nil || p.Zone != nil || p.Status != nil || p.Pri != nil ||
+		p.Sup != nil || p.Cs != nil || p.Paid != nil
+}
+
 // Session is derived from platform JWT claims; the issuer is
 // iag-authentication (NOT this service). Permissions come straight from the
 // token — this service no longer hosts a user/role/permission tier.

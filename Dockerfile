@@ -1,20 +1,22 @@
 # Standalone image for Railway and iag-contract-management repo root builds.
 # Monorepo compose/CI: use Dockerfile.monorepo (--target monorepo).
 
-FROM golang:1.24-alpine AS build
+FROM golang:1.25-alpine AS build
 RUN apk add --no-cache ca-certificates
 WORKDIR /src
 COPY third_party/platform-go /deps/platform-go
+COPY third_party/chat-client /deps/chat-client
 COPY go.mod go.sum ./
 RUN go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go \
+    -replace=github.com/alvor-technologies/iag-chat-client=/deps/chat-client \
     && go mod download
 COPY . .
 # `COPY . .` above restored go.mod from the build context, which still carries
-# the meta-repo-only `replace => ../../../shared/platform-go`. That path does
-# not exist inside the build container, so re-apply the vendored replace
-# before invoking `go build`.
+# the meta-repo-only `replace => ../../../shared/...` paths. Those do not exist
+# inside the build container, so re-apply the vendored replaces before building.
 RUN set -eu; \
-    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go; \
+    go mod edit -replace=github.com/alvor-technologies/iag-platform-go=/deps/platform-go \
+        -replace=github.com/alvor-technologies/iag-chat-client=/deps/chat-client; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/contract-management .; \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/jobs ./cmd/jobs
 

@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/alvor-technologies/iag-contract-management/internal/chat"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/objstore"
@@ -20,10 +23,11 @@ type GovernanceController struct {
 	gov    *persistence.GovStore
 	events *events.Bus
 	docs   *objstore.Presigner // nil when object storage is unconfigured
+	chat   *chat.Service       // nil when chat is unconfigured
 }
 
-func NewGovernanceController(model *models.Store, gov *persistence.GovStore, bus *events.Bus, docs *objstore.Presigner) *GovernanceController {
-	return &GovernanceController{model: model, gov: gov, events: bus, docs: docs}
+func NewGovernanceController(model *models.Store, gov *persistence.GovStore, bus *events.Bus, docs *objstore.Presigner, chatSvc *chat.Service) *GovernanceController {
+	return &GovernanceController{model: model, gov: gov, events: bus, docs: docs, chat: chatSvc}
 }
 
 func govActor(c models.GovContract) string {
@@ -31,6 +35,52 @@ func govActor(c models.GovContract) string {
 		return c.PM
 	}
 	return "system"
+}
+
+// ensureContractThread find-or-creates a contract's chat discussion thread and
+// persists the conversation id back onto the contract. Runs in the background,
+// best-effort, so a chat outage never blocks or fails contract creation.
+func (g *GovernanceController) ensureContractThread(actorUserID, contractID, title string) {
+	if g.chat == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	defer cancel()
+	var parts []string
+	if strings.TrimSpace(actorUserID) != "" {
+		parts = append(parts, actorUserID)
+	}
+	convID, err := g.chat.EnsureContractThread(ctx, contractID, title, parts)
+	if err != nil {
+		slog.Warn("contract chat thread create failed", "contract", contractID, "err", err)
+		return
+	}
+	if convID == "" {
+		return
+	}
+	if err := g.gov.SetContractConversationID(ctx, contractID, convID); err != nil {
+		slog.Warn("persist contract conversation id failed", "contract", contractID, "err", err)
+	}
+}
+
+func contractThreadTitle(c models.GovContract) string {
+	return strings.TrimSpace(strings.TrimSpace(c.Number) + " " + strings.TrimSpace(c.Name))
+}
+
+// postContractSystem posts a system line into a contract's discussion thread
+// (find-or-creating it by link). Async + best-effort so it never affects the
+// request; no-ops when chat is unconfigured or the contract id is empty.
+func (g *GovernanceController) postContractSystem(contractID, message string) {
+	if g.chat == nil || strings.TrimSpace(contractID) == "" {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := g.chat.PostSystem(ctx, contractID, message); err != nil {
+			slog.Warn("contract chat system post failed", "contract", contractID, "err", err)
+		}
+	}()
 }
 
 // ----- Contracts -----
@@ -108,6 +158,7 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		Received:          in.Received,
 		VariationTotal:    in.VariationTotal,
 		PlannedCompletion: in.PlannedCompletion,
+		PMProjectID:       strings.TrimSpace(in.PMProjectID),
 		Documents:         in.Documents,
 		Activity:          []models.GovActivity{{Date: nowStamp(), Actor: in.PM, Action: "Contract created in " + string(status) + " status"}},
 	}
@@ -117,6 +168,10 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		return
 	}
 	g.publishStatus(r, *created, "", created.Status)
+	g.publishPMProjectLink(r, *created, events.TypeContractCreated)
+	if g.chat != nil {
+		go g.ensureContractThread(g.model.SessionFromRequest(r.Context()).UserID, created.ID, contractThreadTitle(*created))
+	}
 	views.JSON(w, http.StatusCreated, created)
 }
 
@@ -169,6 +224,13 @@ func (g *GovernanceController) PatchContract(w http.ResponseWriter, r *http.Requ
 	if statusChanged {
 		g.publishStatus(r, *updated, prevStatus, updated.Status)
 	}
+	// Keep the PM project link in sync (name/status/link changes); the consumer
+	// upserts the contract onto its project.
+	g.publishPMProjectLink(r, *updated, events.TypeContractUpdated)
+	if statusChanged {
+		g.postContractSystem(updated.ID,
+			"Status changed: "+string(prevStatus)+" → "+string(updated.Status)+" (by "+g.actor(r, "")+")")
+	}
 	views.JSON(w, http.StatusOK, updated)
 }
 
@@ -176,8 +238,15 @@ func (g *GovernanceController) DeleteContract(w http.ResponseWriter, r *http.Req
 	if !requirePerm(r.Context(), g.model, w, "contracts.delete") {
 		return
 	}
-	if g.handleErr(w, g.gov.DeleteContract(r.Context(), pathSegmentAfter(r, "contracts"))) {
+	id := pathSegmentAfter(r, "contracts")
+	// Load first so we can tell the PM service to detach the contract from its
+	// project (best-effort; a missing contract just yields no event).
+	existing, _ := g.gov.GetContract(r.Context(), id)
+	if g.handleErr(w, g.gov.DeleteContract(r.Context(), id)) {
 		return
+	}
+	if existing != nil {
+		g.publishPMProjectLink(r, *existing, events.TypeContractDeleted)
 	}
 	views.NoContent(w)
 }
@@ -243,6 +312,10 @@ func (g *GovernanceController) CreateMilestone(w http.ResponseWriter, r *http.Re
 	if status == "" {
 		status = models.MSPending
 	}
+	if !models.ValidMilestoneStatus(status) {
+		views.Error(w, http.StatusBadRequest, "invalid milestone status")
+		return
+	}
 	m := models.GovMilestone{
 		ID: models.NewGovID("GMS"), ContractID: c.ID, Name: strings.TrimSpace(in.Name),
 		Value: in.Value, TargetDate: in.TargetDate, Status: status,
@@ -268,6 +341,10 @@ func (g *GovernanceController) PatchMilestone(w http.ResponseWriter, r *http.Req
 	var p models.GovMilestonePatch
 	if err := decodeJSON(r, &p); err != nil {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if p.Status != nil && !models.ValidMilestoneStatus(*p.Status) {
+		views.Error(w, http.StatusBadRequest, "invalid milestone status")
 		return
 	}
 	applyMilestonePatch(existing, p)
@@ -316,6 +393,22 @@ func (g *GovernanceController) publishStatus(r *http.Request, c models.GovContra
 		"value":          c.Value,
 		"department":     c.Department,
 	}, c.Number)
+}
+
+// publishPMProjectLink emits a project-management-consumable contract lifecycle
+// event so the PM service can attach/detach this contract on its parent project.
+// It reuses the legacy contracts.contract.* event types (the PM consumer keys on
+// pmProjectId) and only fires when the contract is actually linked to a project.
+func (g *GovernanceController) publishPMProjectLink(r *http.Request, c models.GovContract, eventType string) {
+	if g.events == nil || strings.TrimSpace(c.PMProjectID) == "" {
+		return
+	}
+	g.events.PublishCommercial(r.Context(), eventType, map[string]any{
+		"no":          c.Number,
+		"name":        c.Name,
+		"status":      string(c.Status),
+		"pmProjectId": c.PMProjectID,
+	}, c.ID)
 }
 
 func nowStamp() string { return time.Now().UTC().Format("02 Jan 2006 15:04") }
@@ -374,6 +467,9 @@ func applyContractPatch(c *models.GovContract, p models.GovContractPatch) {
 	}
 	if p.PlannedCompletion != nil {
 		c.PlannedCompletion = *p.PlannedCompletion
+	}
+	if p.PMProjectID != nil {
+		c.PMProjectID = strings.TrimSpace(*p.PMProjectID)
 	}
 	if p.Documents != nil {
 		c.Documents = *p.Documents

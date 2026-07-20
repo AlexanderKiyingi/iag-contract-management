@@ -14,7 +14,7 @@ import (
 
 const reqCols = `id, no, title, department, requester, type, procurement_method, supplier,
 	estimate, budget_code, urgency, status, stage, approvals, justification, docs,
-	linked_contract, created_at, updated_at`
+	linked_contract, created_at, updated_at, pm_project_id`
 
 func (s *GovStore) ListRequisitions(ctx context.Context) ([]models.GovRequisition, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+reqCols+` FROM gov_requisitions ORDER BY created_at DESC`)
@@ -47,11 +47,13 @@ func (s *GovStore) CreateRequisition(ctx context.Context, r models.GovRequisitio
 	docs, _ := jsonb(r.Docs)
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO gov_requisitions (id, no, title, department, requester, type, procurement_method,
-			supplier, estimate, budget_code, urgency, status, stage, approvals, justification, docs, linked_contract)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb,$17)
+			supplier, estimate, budget_code, urgency, status, stage, approvals, justification, docs, linked_contract,
+			pm_project_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb,$17,$18)
 		RETURNING `+reqCols,
 		r.ID, r.No, r.Title, r.Department, r.Requester, r.Type, r.ProcurementMethod, r.Supplier,
-		r.Estimate, r.BudgetCode, r.Urgency, r.Status, r.Stage, app, r.Justification, docs, r.LinkedContract)
+		r.Estimate, r.BudgetCode, r.Urgency, r.Status, r.Stage, app, r.Justification, docs, r.LinkedContract,
+		r.PMProjectID)
 	return scanReq(row)
 }
 
@@ -84,7 +86,7 @@ func scanReq(row pgx.Row) (*models.GovRequisition, error) {
 	var app, docs []byte
 	if err := row.Scan(&r.ID, &r.No, &r.Title, &r.Department, &r.Requester, &r.Type, &r.ProcurementMethod,
 		&r.Supplier, &r.Estimate, &r.BudgetCode, &r.Urgency, &r.Status, &r.Stage, &app, &r.Justification,
-		&docs, &r.LinkedContract, &r.CreatedAt, &r.UpdatedAt); err != nil {
+		&docs, &r.LinkedContract, &r.CreatedAt, &r.UpdatedAt, &r.PMProjectID); err != nil {
 		return nil, err
 	}
 	r.Approvals = []models.VariationApproval{}
