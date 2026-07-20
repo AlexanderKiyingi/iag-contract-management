@@ -99,7 +99,7 @@ func (c *WorkspaceResourcesController) GetEngineer(w http.ResponseWriter, r *htt
 }
 
 func (c *WorkspaceResourcesController) CreateEngineer(w http.ResponseWriter, r *http.Request) {
-	if !requireMutate(r.Context(), c.model, w) {
+	if !requirePerm(r.Context(), c.model, w, "users.create") {
 		return
 	}
 	var in models.EngineerInput
@@ -116,7 +116,7 @@ func (c *WorkspaceResourcesController) CreateEngineer(w http.ResponseWriter, r *
 }
 
 func (c *WorkspaceResourcesController) PatchEngineer(w http.ResponseWriter, r *http.Request) {
-	if !requireMutate(r.Context(), c.model, w) {
+	if !requirePerm(r.Context(), c.model, w, "users.update") {
 		return
 	}
 	var in models.EngineerInput
@@ -133,7 +133,7 @@ func (c *WorkspaceResourcesController) PatchEngineer(w http.ResponseWriter, r *h
 }
 
 func (c *WorkspaceResourcesController) DeleteEngineer(w http.ResponseWriter, r *http.Request) {
-	if !requireMutate(r.Context(), c.model, w) {
+	if !requirePerm(r.Context(), c.model, w, "users.delete") {
 		return
 	}
 	if err := c.model.DeleteEngineer(lastPathSegment(r)); err != nil {
