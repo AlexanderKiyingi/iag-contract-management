@@ -19,10 +19,11 @@ type EntityRepository interface {
 	UpdateContract(ctx context.Context, c Contract) error
 	DeleteContract(ctx context.Context, no string) error
 
-	// Zones (only the derived contract_count is mutated by per-row writes;
-	// the zone seed itself comes from the snapshot path).
+	// Zones
+	InsertZone(ctx context.Context, z Zone) error
 	UpdateZone(ctx context.Context, z Zone) error
 	UpdateZoneCount(ctx context.Context, code string, count int) error
+	DeleteZone(ctx context.Context, code string) error
 
 	// Engineers
 	InsertEngineer(ctx context.Context, e Engineer) error

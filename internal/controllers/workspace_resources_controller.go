@@ -34,6 +34,34 @@ func (c *WorkspaceResourcesController) GetZone(w http.ResponseWriter, r *http.Re
 	views.JSON(w, http.StatusOK, z)
 }
 
+func (c *WorkspaceResourcesController) CreateZone(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), c.model, w, "zones.create") {
+		return
+	}
+	var in models.ZoneInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	z, err := c.model.CreateZone(in)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusCreated, z)
+}
+
+func (c *WorkspaceResourcesController) DeleteZone(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), c.model, w, "zones.delete") {
+		return
+	}
+	if err := c.model.DeleteZone(lastPathSegment(r)); err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.NoContent(w)
+}
+
 func (c *WorkspaceResourcesController) PatchZone(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), c.model, w, "zones.update") {
 		return

@@ -314,6 +314,16 @@ type ZonePatch struct {
 	Color *string `json:"color,omitempty"`
 }
 
+type ZoneInput struct {
+	Code  string `json:"code"`
+	Name  string `json:"name"`
+	Desc  string `json:"desc"`
+	Sup   string `json:"sup"`
+	Color string `json:"color"`
+	Cs    int64  `json:"cs"`
+	Paid  int64  `json:"paid"`
+}
+
 type TaskInput struct {
 	Title    string `json:"title"`
 	Col      string `json:"col"`

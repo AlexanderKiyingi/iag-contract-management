@@ -60,6 +60,19 @@ func (p *Postgres) DeleteContract(ctx context.Context, no string) error {
 
 // --- Zones (only count maintenance — full zone seed is owned by SaveState) -
 
+func (p *Postgres) InsertZone(ctx context.Context, z models.Zone) error {
+	_, err := p.Pool.Exec(ctx, `
+		INSERT INTO zones (code, name, description, supervisor, contract_sum, paid, balance, color, contract_count)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0)`,
+		z.Code, z.Name, z.Desc, z.Sup, z.Cs, z.Paid, z.Bal, z.Color)
+	return err
+}
+
+func (p *Postgres) DeleteZone(ctx context.Context, code string) error {
+	tag, err := p.Pool.Exec(ctx, `DELETE FROM zones WHERE code=$1`, code)
+	return errOrNotFound(tag, err)
+}
+
 func (p *Postgres) UpdateZone(ctx context.Context, z models.Zone) error {
 	tag, err := p.Pool.Exec(ctx, `
 		UPDATE zones SET name=$2, description=$3, supervisor=$4, color=$5

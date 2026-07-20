@@ -58,6 +58,56 @@ func (s *Store) PatchZone(code string, patch ZonePatch) (Zone, error) {
 	return Zone{}, ErrNotFound
 }
 
+func (s *Store) CreateZone(in ZoneInput) (Zone, error) {
+	code := strings.TrimSpace(in.Code)
+	if code == "" || strings.TrimSpace(in.Name) == "" {
+		return Zone{}, ErrValidation
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, z := range s.Workspace.Zones {
+		if z.Code == code {
+			return Zone{}, ErrConflict
+		}
+	}
+	z := Zone{
+		Code:  code,
+		Name:  strings.TrimSpace(in.Name),
+		Desc:  strings.TrimSpace(in.Desc),
+		Sup:   strings.TrimSpace(in.Sup),
+		Color: strings.TrimSpace(in.Color),
+		Cs:    in.Cs,
+		Paid:  in.Paid,
+		Bal:   in.Cs - in.Paid,
+	}
+	if s.hasRepo() {
+		if err := s.repo.InsertZone(s.persistCtx(), z); err != nil {
+			return Zone{}, wrapPersist(err)
+		}
+	}
+	s.Workspace.Zones = append(s.Workspace.Zones, z)
+	return z, nil
+}
+
+func (s *Store) DeleteZone(code string) error {
+	code = strings.TrimSpace(code)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, z := range s.Workspace.Zones {
+		if z.Code != code {
+			continue
+		}
+		if s.hasRepo() {
+			if err := s.repo.DeleteZone(s.persistCtx(), code); err != nil {
+				return wrapPersist(err)
+			}
+		}
+		s.Workspace.Zones = append(s.Workspace.Zones[:i], s.Workspace.Zones[i+1:]...)
+		return nil
+	}
+	return ErrNotFound
+}
+
 func (s *Store) GetEngineer(id string) (_ Engineer, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

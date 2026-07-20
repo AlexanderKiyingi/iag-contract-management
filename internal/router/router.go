@@ -235,8 +235,10 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	// Zones
 	g.GET("/zones", wrap(mvc.WsRes.ListZones))
+	g.POST("/zones", wrap(mvc.WsRes.CreateZone))
 	g.GET("/zones/:code", wrap(mvc.WsRes.GetZone))
 	g.PATCH("/zones/:code", wrap(mvc.WsRes.PatchZone))
+	g.DELETE("/zones/:code", wrap(mvc.WsRes.DeleteZone))
 
 	// Engineers
 	g.GET("/engineers", wrap(mvc.WsRes.ListEngineers))
