@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"strings"
 	"time"
 )
 
@@ -19,12 +18,8 @@ var ErrWorkflowComplete = errors.New("workflow already complete")
 // express on its own.
 var ErrSelfSuccession = errors.New("segregation of duties: a different approver is required to advance this stage")
 
-// isSystemActor treats empty / "system" actors as non-human (automated or
-// unattributed) advances that four-eyes should not block.
-func isSystemActor(by string) bool {
-	b := strings.TrimSpace(by)
-	return b == "" || strings.EqualFold(b, "system")
-}
+// The system-actor exemption now lives in the shared engine, which applies it
+// to every chain rather than to these three by hand.
 
 // PaymentStages is the ordered payment workflow.
 var PaymentStages = []string{"PM Approval", "Finance Review", "Payment Authorization", "Paid"}
@@ -85,12 +80,11 @@ func (p *GovPayment) Advance(by, date string) (completed int, authorized, paid b
 			p.History[i].Step = s
 		}
 	}
-	completed = p.Stage
-	// Four-eyes: the actor who completed the prior stage cannot complete this one.
-	if completed > 0 && !isSystemActor(by) {
-		if prev := strings.TrimSpace(p.History[completed-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
-			return -1, false, false, ErrSelfSuccession
-		}
+	// Sequencing and segregation of duties are the shared engine's, not this
+	// file's — see governance_chains.go.
+	completed, _, err = govAdvance("gov.payment", "", p.Stage, paymentSteps(p.History), by)
+	if err != nil {
+		return -1, false, false, err
 	}
 	p.History[completed] = PaymentStep{Step: PaymentStages[completed], By: by, Date: date}
 	p.Stage++
@@ -157,13 +151,13 @@ func (v *GovVariation) Advance(by, date string) (approved bool, err error) {
 			v.Approvals[i].Step = s
 		}
 	}
-	// Four-eyes: the actor who approved the prior stage cannot approve this one.
-	if v.Stage > 0 && !isSystemActor(by) {
-		if prev := strings.TrimSpace(v.Approvals[v.Stage-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
-			return false, ErrSelfSuccession
-		}
+	// Sequencing and segregation of duties are the shared engine's — see
+	// governance_chains.go.
+	completed, _, err := govAdvance("gov.variation", "", v.Stage, variationSteps(v.Approvals), by)
+	if err != nil {
+		return false, err
 	}
-	v.Approvals[v.Stage] = VariationApproval{Step: VariationStages[v.Stage], By: by, Date: date}
+	v.Approvals[completed] = VariationApproval{Step: VariationStages[completed], By: by, Date: date}
 	v.Stage++
 	if v.Stage >= len(VariationStages) {
 		v.Status = "Approved"

@@ -64,13 +64,13 @@ func (rq *GovRequisition) Advance(by, date string) (approved bool, err error) {
 		rq.Status = "Approved"
 		return true, nil
 	}
-	// Four-eyes: the actor who approved the prior stage cannot approve this one.
-	if rq.Stage > 0 && !isSystemActor(by) {
-		if prev := strings.TrimSpace(rq.Approvals[rq.Stage-1].By); prev != "" && strings.EqualFold(prev, strings.TrimSpace(by)) {
-			return false, ErrSelfSuccession
-		}
+	// Sequencing and segregation of duties are the shared engine's — see
+	// governance_chains.go.
+	completed, _, err := govAdvance("gov.requisition", "", rq.Stage, variationSteps(rq.Approvals), by)
+	if err != nil {
+		return false, err
 	}
-	rq.Approvals[rq.Stage] = VariationApproval{Step: RequisitionStages[rq.Stage], By: by, Date: date}
+	rq.Approvals[completed] = VariationApproval{Step: RequisitionStages[completed], By: by, Date: date}
 	rq.Stage++
 	if rq.Stage >= len(RequisitionStages) {
 		rq.Status = "Approved"
