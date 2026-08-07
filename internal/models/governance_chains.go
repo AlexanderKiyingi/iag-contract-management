@@ -77,7 +77,12 @@ func desksFor(stages []string) []approvalchain.Desk {
 // the engine's state is derived on each call rather than stored twice.
 func govState(chainKey, raisedBy string, stage int, steps []stepRecord) approvalchain.State {
 	s := approvalchain.New(chainKey, raisedBy, approvalchain.Options{})
-	chain, _ := governanceChains.Get(chainKey)
+	chain, ok := governanceChains.Get(chainKey)
+	if !ok {
+		// Unreachable with the three literal keys this package uses, but a
+		// missing chain would otherwise nil-deref below.
+		return s
+	}
 	if stage <= 0 {
 		s.Status = approvalchain.StatusInFlight
 		s.StageIndex = 0
@@ -93,10 +98,22 @@ func govState(chainKey, raisedBy string, stage int, steps []stepRecord) approval
 		s.Desk = chain.Desks[stage].Key
 	}
 
-	for _, st := range steps {
-		if strings.TrimSpace(st.By) == "" {
-			continue
-		}
+	// Only the stages already completed, and blanks among them kept.
+	//
+	// Both halves matter. Including the trailing unfilled stages would put an
+	// empty actor at the end of history, and the successive-approver rule reads
+	// backwards from there — it would find a blank every time and never fire.
+	// Dropping blanks among the completed stages is the opposite error: the rule
+	// would reach past an unattributed stage to the human before it, and block
+	// someone the previous hand-rolled check allowed.
+	done := stage
+	if done > len(steps) {
+		done = len(steps)
+	}
+	if done < 0 {
+		done = 0
+	}
+	for _, st := range steps[:done] {
 		s.History = append(s.History, approvalchain.Step{
 			Desk:      approvalchain.DeskKey(st.Step),
 			DeskLabel: st.Step,
