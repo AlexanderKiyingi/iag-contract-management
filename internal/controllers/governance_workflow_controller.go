@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -127,31 +128,47 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 		views.Error(w, http.StatusUnprocessableEntity, "payment already fully processed")
 		return
 	}
-	updated, err := g.gov.UpdatePayment(r.Context(), *p)
-	if err != nil {
-		views.WriteError(w, err)
-		return
-	}
-	if g.events != nil && (authorized || paid) {
-		// Enrich with the contractor (vendor) and contract number so finance can
-		// book the AP without a second lookup.
+	// The stage advance and the events it triggers commit together. The
+	// authorization stage is what instructs finance to book the payable, so a
+	// request that advanced the stage but failed to record that instruction
+	// would leave a payment authorized here and invisible there — with nothing
+	// to reconcile from, because contracts believes it is done.
+	var updated *models.GovPayment
+	err = g.gov.InTx(r.Context(), func(ctx context.Context) error {
+		u, uerr := g.gov.UpdatePaymentTx(ctx, *p)
+		if uerr != nil {
+			return uerr
+		}
+		updated = u
+		if g.events == nil || !(authorized || paid) {
+			return nil
+		}
 		var contractor, number string
-		if c, cerr := g.gov.GetContract(r.Context(), updated.ContractID); cerr == nil {
+		if c, cerr := g.gov.GetContract(ctx, updated.ContractID); cerr == nil {
 			contractor, number = c.Contractor, c.Number
 		}
 		if authorized {
-			g.events.PublishCommercial(r.Context(), "contracts.payment.authorized", map[string]any{
+			if perr := g.events.PublishCommercialTx(ctx, "contracts.payment.authorized", map[string]any{
 				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
 				"contractor": contractor, "milestoneId": updated.MilestoneID,
 				"amount": updated.Amount, "payable": updated.Payable, "retention": updated.Retention,
-			}, updated.ID)
+			}, updated.ID); perr != nil {
+				return perr
+			}
 		}
 		if paid {
-			g.events.PublishCommercial(r.Context(), "contracts.payment.paid", map[string]any{
+			if perr := g.events.PublishCommercialTx(ctx, "contracts.payment.paid", map[string]any{
 				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
 				"contractor": contractor, "milestoneId": updated.MilestoneID, "payable": updated.Payable,
-			}, updated.ID)
+			}, updated.ID); perr != nil {
+				return perr
+			}
 		}
+		return nil
+	})
+	if err != nil {
+		views.WriteError(w, err)
+		return
 	}
 	if paid {
 		if ms, err := g.gov.GetMilestone(r.Context(), updated.MilestoneID); err == nil {

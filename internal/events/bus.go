@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	SpecVersion = "1.0"
-	Source      = "iag.contract-management"
+	SpecVersion     = "1.0"
+	Source          = "iag.contract-management"
 	TopicCommercial = "iag.commercial"
 
 	TypeContractCreated       = "contracts.contract.created"
@@ -92,6 +92,34 @@ type PlatformEvent struct {
 	Source      string         `json:"source"`
 	SpecVersion string         `json:"specversion"`
 	Data        map[string]any `json:"data"`
+}
+
+// PublishCommercialTx enqueues the event and reports whether it landed.
+//
+// PublishCommercial swallows the enqueue error, which is right for an event
+// that merely notifies. It is wrong for one that carries a financial
+// consequence: if the row cannot be written, the caller must not commit the
+// change that the event was supposed to announce. Used with GovStore.InTx, a
+// failure here rolls the whole thing back and the client retries.
+func (b *Bus) PublishCommercialTx(ctx context.Context, eventType string, data map[string]any, key string) error {
+	if !b.enabled || b.outbox == nil {
+		// No durable path configured (unit tests, or events disabled). Fall back
+		// to the best-effort publish rather than failing the business write.
+		b.PublishCommercial(ctx, eventType, data, key)
+		return nil
+	}
+	evt := PlatformEvent{
+		ID:          uuid.NewString(),
+		Type:        eventType,
+		Time:        time.Now().UTC().Format(time.RFC3339Nano),
+		Source:      Source,
+		SpecVersion: SpecVersion,
+		Data:        data,
+	}
+	if key == "" {
+		key = evt.ID
+	}
+	return b.outbox.Enqueue(ctx, eventType, key, evt)
 }
 
 func (b *Bus) PublishCommercial(ctx context.Context, eventType string, data map[string]any, key string) {

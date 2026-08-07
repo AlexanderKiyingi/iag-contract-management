@@ -239,3 +239,15 @@ func nullable(s string) any {
 	}
 	return s
 }
+
+// TxFrom returns the transaction WithTx attached to ctx, if any. It lets a
+// store run its own statements on the same transaction the outbox insert will
+// use, so both commit together.
+func TxFrom(ctx context.Context) (pgx.Tx, bool) {
+	if v := ctx.Value(txKey{}); v != nil {
+		if tx, ok := v.(pgx.Tx); ok && tx != nil {
+			return tx, true
+		}
+	}
+	return nil, false
+}

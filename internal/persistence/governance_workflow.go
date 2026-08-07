@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
+	"github.com/alvor-technologies/iag-contract-management/internal/outbox"
 )
 
 // ----- Payments -----
@@ -217,4 +218,45 @@ func scanVariation(row pgx.Row) (*models.GovVariation, error) {
 	v.Approvals = []models.VariationApproval{}
 	_ = json.Unmarshal(app, &v.Approvals)
 	return &v, nil
+}
+
+// InTx runs fn inside a single transaction and attaches that transaction to the
+// context it passes on, so an outbox Enqueue made inside fn commits with the
+// domain write instead of after it.
+//
+// The governance payment workflow needs this: its authorization stage is what
+// tells finance to book a payable. Advancing the stage and recording that
+// instruction have to be one atomic act, or a request that commits and then
+// fails to enqueue leaves a payment authorized in contracts and invisible to
+// finance, with nothing to reconcile from.
+func (s *GovStore) InTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := fn(outbox.WithTx(ctx, tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// UpdatePaymentTx is UpdatePayment against the transaction carried on ctx.
+func (s *GovStore) UpdatePaymentTx(ctx context.Context, p models.GovPayment) (*models.GovPayment, error) {
+	tx, ok := outbox.TxFrom(ctx)
+	if !ok {
+		return s.UpdatePayment(ctx, p)
+	}
+	hist, _ := jsonb(p.History)
+	row := tx.QueryRow(ctx, `
+		UPDATE gov_payments SET stage=$2, status=$3, history=$4::jsonb, updated_at=NOW()
+		WHERE id=$1
+		RETURNING id, milestone_id, contract_id, amount, retention, payable, stage, status, history, created_at, updated_at`,
+		p.ID, p.Stage, p.Status, hist)
+	pp, err := scanPayment(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return pp, err
 }
