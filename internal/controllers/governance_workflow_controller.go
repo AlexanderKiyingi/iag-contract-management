@@ -143,15 +143,22 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 		if g.events == nil || !(authorized || paid) {
 			return nil
 		}
-		var contractor, number string
+		var contractor, number, currency string
 		if c, cerr := g.gov.GetContract(ctx, updated.ContractID); cerr == nil {
-			contractor, number = c.Contractor, c.Number
+			contractor, number, currency = c.Contractor, c.Number, c.Currency
+		}
+		// The contract's own currency. Without it finance booked every contract
+		// payable as UGX, so a payment on a USD contract became the same number
+		// of shillings.
+		if strings.TrimSpace(currency) == "" {
+			currency = "UGX"
 		}
 		if authorized {
 			if perr := g.events.PublishCommercialTx(ctx, "contracts.payment.authorized", map[string]any{
 				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
 				"contractor": contractor, "milestoneId": updated.MilestoneID,
 				"amount": updated.Amount, "payable": updated.Payable, "retention": updated.Retention,
+				"currency": currency,
 			}, updated.ID); perr != nil {
 				return perr
 			}
@@ -160,6 +167,7 @@ func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Req
 			if perr := g.events.PublishCommercialTx(ctx, "contracts.payment.paid", map[string]any{
 				"paymentId": updated.ID, "contractId": updated.ContractID, "contractNumber": number,
 				"contractor": contractor, "milestoneId": updated.MilestoneID, "payable": updated.Payable,
+				"currency": currency,
 			}, updated.ID); perr != nil {
 				return perr
 			}
