@@ -1,0 +1,6 @@
+.env
+bin/
+dist/
+*.exe
+node_modules/
+.turbo/
