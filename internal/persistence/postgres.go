@@ -3,9 +3,11 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	platformdb "github.com/alvor-technologies/iag-platform-go/db"
 )
 
 type Postgres struct {
@@ -13,25 +15,24 @@ type Postgres struct {
 }
 
 func Connect(ctx context.Context, databaseURL string) (*Postgres, error) {
-	cfg, err := pgxpool.ParseConfig(databaseURL)
+	// The schema was pinned with an AfterConnect `SET search_path`, which is
+	// right against Postgres directly and silently wrong behind PgBouncer in
+	// transaction pooling mode: the SET binds to one server connection while the
+	// next transaction may be handed another, so this service's tables would be
+	// resolved in whatever schema that connection happened to carry. The shared
+	// package applies it as a startup parameter, which the pooler tracks per
+	// server connection.
+	//
+	// The DSN is chosen before the config is built, so an explicit argument is
+	// honoured even when DATABASE_URL is unset — how tests and CLI tools call
+	// this.
+	pcfg := platformdb.ConfigFromEnv("contracts, public")
+	if strings.TrimSpace(databaseURL) != "" {
+		pcfg.URL = databaseURL
+	}
+	pool, err := platformdb.Connect(ctx, pcfg)
 	if err != nil {
-		return nil, fmt.Errorf("parse database url: %w", err)
-	}
-	// Resolve unqualified names to this service's own schema first, falling back
-	// to public so legacy tables that still live there keep resolving. On the
-	// shared Railway database this isolates contract-management from the global
-	// public namespace and its single global schema_migrations ledger.
-	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-		_, err := conn.Exec(ctx, `SET search_path TO contracts, public`)
-		return err
-	}
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("connect postgres: %w", err)
-	}
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("ping postgres: %w", err)
+		return nil, fmt.Errorf("connect database: %w", err)
 	}
 	pg := &Postgres{Pool: pool}
 	if err := RunMigrations(ctx, pool); err != nil {
