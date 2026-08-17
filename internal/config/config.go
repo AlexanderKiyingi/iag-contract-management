@@ -46,6 +46,11 @@ type Config struct {
 	// Empty list = trust nobody (ClientIP() falls back to RemoteAddr).
 	TrustedProxies []string
 
+	// RedisURL enables cross-instance workspace refreshes. Empty keeps the
+	// WebSocket push local to whichever instance served the write, which is
+	// complete on one instance and silently partial on more than one.
+	RedisURL string
+
 	// RequestTimeout is the per-request deadline applied by the timeout
 	// middleware. Zero disables it.
 	RequestTimeout time.Duration
@@ -140,6 +145,7 @@ func Load() Config {
 
 		AllowedOrigins:  allowed,
 		RateLimitPerMin: envInt("RATE_LIMIT_PER_MINUTE", 120),
+		RedisURL:        strings.TrimSpace(envStr("REDIS_URL", "")),
 		MaxBodyBytes:    int64(envInt("MAX_BODY_BYTES", 8*1024*1024)),
 		TrustedProxies:  proxies,
 		RequestTimeout:  time.Duration(envInt("REQUEST_TIMEOUT_SECONDS", 30)) * time.Second,

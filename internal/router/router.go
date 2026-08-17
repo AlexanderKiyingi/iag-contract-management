@@ -1,7 +1,11 @@
 package router
 
 import (
+	"context"
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	platformmw "github.com/alvor-technologies/iag-platform-go/middleware"
@@ -32,6 +36,23 @@ func New(
 	mvc := app.NewMVC(cfg, pg, bus)
 	hub := realtime.NewHub(mvc.Model)
 
+	// Cross-instance workspace refreshes. A mutation served by one instance has
+	// to refresh sockets held by all of them; without Redis the push reaches
+	// only this instance's sessions, which is correct for a single replica and
+	// quietly incomplete for more. A bad or unreachable URL degrades to that
+	// same single-instance behaviour rather than stopping the service.
+	var notifier middleware.WorkspaceNotifier
+	if cfg.RedisURL != "" {
+		if opt, err := redis.ParseURL(cfg.RedisURL); err != nil {
+			slog.Warn("invalid REDIS_URL; workspace pushes stay per-instance", "err", err)
+		} else {
+			bridge := realtime.NewNudgeBridge(redis.NewClient(opt), hub)
+			go bridge.RunSubscriber(context.Background())
+			notifier = bridge
+			slog.Info("cross-instance workspace refresh enabled (redis)")
+		}
+	}
+
 	r := gin.New()
 	// Trust only the upstream proxies operators explicitly listed. Without
 	// this Gin would either trust all proxies (older default) or trust none
@@ -57,7 +78,7 @@ func New(
 	r.Use(middleware.GinRateLimit(cfg.RateLimitPerMin))
 	r.Use(middleware.RequestAudit(pg))
 	// Push the updated workspace to live WS clients after any successful mutation.
-	r.Use(middleware.GinBroadcastWorkspace(hub))
+	r.Use(middleware.GinBroadcastWorkspace(hub, notifier))
 	// Request log runs last so handler-applied status codes are visible.
 	r.Use(middleware.GinLogger())
 
