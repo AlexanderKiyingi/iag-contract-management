@@ -68,6 +68,45 @@ func (g *GovernanceController) CreateContractor(w http.ResponseWriter, r *http.R
 	views.JSON(w, http.StatusCreated, created)
 }
 
+// ----- Project managers (governed dropdown source for the contract form) -----
+
+func (g *GovernanceController) ListProjectManagers(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "contracts.read") {
+		return
+	}
+	list, err := g.gov.ListProjectManagers(r.Context())
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, map[string]any{"items": list})
+}
+
+func (g *GovernanceController) CreateProjectManager(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "contracts.update") {
+		return
+	}
+	var in models.GovProjectManagerInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(in.Name) == "" {
+		views.Error(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	created, err := g.gov.CreateProjectManager(r.Context(), models.GovProjectManager{
+		ID:    models.NewGovID("GPM"),
+		Name:  strings.TrimSpace(in.Name),
+		Email: strings.TrimSpace(in.Email),
+	})
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusCreated, created)
+}
+
 func (g *GovernanceController) PatchContractor(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "contractors.update") {
 		return

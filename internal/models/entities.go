@@ -131,15 +131,15 @@ type CustomRole struct {
 }
 
 type FrontendStore struct {
-	Tasks         TasksStore            `json:"tasks"`
-	Milestones    []Milestone           `json:"milestones"`
-	Assistance    []AssistanceMessage   `json:"assistance"`
-	Audit         []AuditEntry          `json:"audit"`
-	Materials     []MaterialEntry       `json:"materials"`
-	Updates       []any                 `json:"updates"`
-	CustomRoles   []CustomRole          `json:"customRoles"`
-	ProfilePhotos map[string]string     `json:"profilePhotos"`
-	AiScan        any                   `json:"aiScan,omitempty"`
+	Tasks         TasksStore          `json:"tasks"`
+	Milestones    []Milestone         `json:"milestones"`
+	Assistance    []AssistanceMessage `json:"assistance"`
+	Audit         []AuditEntry        `json:"audit"`
+	Materials     []MaterialEntry     `json:"materials"`
+	Updates       []any               `json:"updates"`
+	CustomRoles   []CustomRole        `json:"customRoles"`
+	ProfilePhotos map[string]string   `json:"profilePhotos"`
+	AiScan        any                 `json:"aiScan,omitempty"`
 }
 
 type ContractInput struct {

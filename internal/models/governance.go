@@ -208,19 +208,22 @@ type GovMilestone struct {
 }
 
 type GovContract struct {
-	ID                string          `json:"id"`
-	Number            string          `json:"number"`
-	Name              string          `json:"name"`
-	Contractor        string          `json:"contractor,omitempty"`
-	ContractorID      string          `json:"contractorId,omitempty"`
-	ContractorContact string          `json:"contractorContact,omitempty"`
-	Type              string          `json:"type,omitempty"`
-	StartDate         string          `json:"startDate,omitempty"`
-	EndDate           string          `json:"endDate,omitempty"`
-	Location          string          `json:"location,omitempty"`
-	PM                string          `json:"pm,omitempty"`
-	Department        string          `json:"department,omitempty"`
-	Value             int64           `json:"value"`
+	ID                string `json:"id"`
+	Number            string `json:"number"`
+	Name              string `json:"name"`
+	Contractor        string `json:"contractor,omitempty"`
+	ContractorID      string `json:"contractorId,omitempty"`
+	ContractorContact string `json:"contractorContact,omitempty"`
+	Type              string `json:"type,omitempty"`
+	StartDate         string `json:"startDate,omitempty"`
+	EndDate           string `json:"endDate,omitempty"`
+	Location          string `json:"location,omitempty"`
+	PM                string `json:"pm,omitempty"`
+	Department        string `json:"department,omitempty"`
+	Value             int64  `json:"value"`
+	// Currency is the ISO-ish code the value/milestones/payments are in
+	// (e.g. UGX, USD, EUR). Empty defaults to UGX.
+	Currency          string          `json:"currency,omitempty"`
 	Retention         int             `json:"retention"`
 	Status            GovStatus       `json:"status"`
 	ExecutionStatus   ExecutionStatus `json:"executionStatus,omitempty"`
@@ -231,15 +234,15 @@ type GovContract struct {
 	// PMProjectID links this contract to a parent Project Management project.
 	// A Project owns Contracts; the project-management consumer keys on this to
 	// attach the contract to its project.
-	PMProjectID string          `json:"pmProjectId,omitempty"`
+	PMProjectID string `json:"pmProjectId,omitempty"`
 	// ConversationID is the iag-chat discussion thread for this contract,
 	// find-or-created on contract creation. Empty when chat is not configured.
-	ConversationID string       `json:"conversationId,omitempty"`
-	Documents      []GovDoc      `json:"documents"`
-	Activity    []GovActivity   `json:"activity"`
-	Milestones  []GovMilestone  `json:"milestones,omitempty"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	UpdatedAt   time.Time       `json:"updatedAt"`
+	ConversationID string         `json:"conversationId,omitempty"`
+	Documents      []GovDoc       `json:"documents"`
+	Activity       []GovActivity  `json:"activity"`
+	Milestones     []GovMilestone `json:"milestones,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
 }
 
 // ----- inputs -----
@@ -257,6 +260,7 @@ type GovContractInput struct {
 	PM                string          `json:"pm"`
 	Department        string          `json:"department"`
 	Value             int64           `json:"value"`
+	Currency          string          `json:"currency"`
 	Retention         int             `json:"retention"`
 	Status            GovStatus       `json:"status"`
 	ExecutionStatus   ExecutionStatus `json:"executionStatus"`
@@ -280,6 +284,7 @@ type GovContractPatch struct {
 	PM                *string          `json:"pm,omitempty"`
 	Department        *string          `json:"department,omitempty"`
 	Value             *int64           `json:"value,omitempty"`
+	Currency          *string          `json:"currency,omitempty"`
 	Retention         *int             `json:"retention,omitempty"`
 	Status            *GovStatus       `json:"status,omitempty"`
 	ExecutionStatus   *ExecutionStatus `json:"executionStatus,omitempty"`

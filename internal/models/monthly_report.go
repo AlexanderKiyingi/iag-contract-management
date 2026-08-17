@@ -13,9 +13,9 @@ import (
 // ----- Contractors -----
 
 type GovContractor struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Contact   string    `json:"contact,omitempty"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Contact string `json:"contact,omitempty"`
 	// PlatformUserID / UserEmail bind this contractor to a login so that user is
 	// scoped to this contractor's contracts in the portal. Either matches.
 	PlatformUserID string    `json:"platformUserId,omitempty"`
@@ -36,6 +36,21 @@ type GovContractorPatch struct {
 	Contact        *string `json:"contact,omitempty"`
 	PlatformUserID *string `json:"platformUserId,omitempty"`
 	UserEmail      *string `json:"userEmail,omitempty"`
+}
+
+// GovProjectManager is a governed, reusable person who runs contracts — the
+// source for the contract form's "Project manager" dropdown (select or add new).
+type GovProjectManager struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type GovProjectManagerInput struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // ----- Progress reports (per contract, per period) -----

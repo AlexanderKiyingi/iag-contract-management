@@ -177,6 +177,7 @@ func (g *GovernanceController) CreateContract(w http.ResponseWriter, r *http.Req
 		PM:                in.PM,
 		Department:        in.Department,
 		Value:             in.Value,
+		Currency:          strings.ToUpper(strings.TrimSpace(in.Currency)),
 		Retention:         in.Retention,
 		Status:            status,
 		ExecutionStatus:   execStatus,
@@ -469,6 +470,9 @@ func applyContractPatch(c *models.GovContract, p models.GovContractPatch) {
 	}
 	if p.Value != nil {
 		c.Value = *p.Value
+	}
+	if p.Currency != nil {
+		c.Currency = strings.ToUpper(strings.TrimSpace(*p.Currency))
 	}
 	if p.Retention != nil {
 		c.Retention = *p.Retention

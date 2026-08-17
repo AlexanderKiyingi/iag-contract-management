@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	zoneColors = []string{"#059669", "#d97706", "#2563eb", "#7c3aed", "#dc2626"}
-	zoneNames  = []string{"North Ridge", "Valley Works", "Plateau East", "River Basin", "Summit South"}
+	zoneColors  = []string{"#059669", "#d97706", "#2563eb", "#7c3aed", "#dc2626"}
+	zoneNames   = []string{"North Ridge", "Valley Works", "Plateau East", "River Basin", "Summit South"}
 	supervisors = []string{
 		"Favour Kyorishaba", "James Okello", "Mary Nalwoga", "Peter Mugisha", "Grace Akello",
 	}
@@ -23,7 +23,7 @@ var (
 		"Cement 50kg", "Steel bars 12mm", "Aggregate", "Timber truss", "PVC pipe",
 		"Rebar 16mm", "Sand fine", "Gravel", "Roofing sheet", "Binding wire",
 	}
-	statuses = []ContractStatus{StatusPlanning, StatusActive, StatusOnHold, StatusComplete}
+	statuses   = []ContractStatus{StatusPlanning, StatusActive, StatusOnHold, StatusComplete}
 	priorities = []Priority{PriorityHigh, PriorityMedium, PriorityLow}
 )
 

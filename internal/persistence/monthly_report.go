@@ -97,6 +97,49 @@ func scanContractor(row pgx.Row) (*models.GovContractor, error) {
 	return &c, nil
 }
 
+// ---------------- Project managers ----------------
+
+const projectManagerCols = `id, name, COALESCE(email,'') AS email, created_at, updated_at`
+
+func (s *GovStore) ListProjectManagers(ctx context.Context) ([]models.GovProjectManager, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+projectManagerCols+` FROM gov_project_managers ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.GovProjectManager{}
+	for rows.Next() {
+		pm, err := scanProjectManager(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *pm)
+	}
+	return out, rows.Err()
+}
+
+// CreateProjectManager inserts a PM, or returns the existing one with the same
+// name (case-insensitive dedupe) so the form's "add new" is idempotent.
+func (s *GovStore) CreateProjectManager(ctx context.Context, pm models.GovProjectManager) (*models.GovProjectManager, error) {
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO gov_project_managers (id, name, email)
+		VALUES ($1,$2,NULLIF($3,''))
+		ON CONFLICT (lower(name)) DO UPDATE SET
+			email = CASE WHEN EXCLUDED.email IS NOT NULL AND EXCLUDED.email <> '' THEN EXCLUDED.email ELSE gov_project_managers.email END,
+			updated_at = NOW()
+		RETURNING `+projectManagerCols,
+		pm.ID, pm.Name, pm.Email)
+	return scanProjectManager(row)
+}
+
+func scanProjectManager(row pgx.Row) (*models.GovProjectManager, error) {
+	var pm models.GovProjectManager
+	if err := row.Scan(&pm.ID, &pm.Name, &pm.Email, &pm.CreatedAt, &pm.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &pm, nil
+}
+
 // GetContractorForUser resolves the contractor a login is bound to, matching by
 // platform user id (JWT subject) or email (case-insensitive). Either suffices.
 func (s *GovStore) GetContractorForUser(ctx context.Context, userID, email string) (*models.GovContractor, error) {

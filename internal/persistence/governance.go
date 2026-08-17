@@ -70,7 +70,8 @@ func jsonb(v any) ([]byte, error) {
 const govContractCols = `id, number, name, contractor, contractor_id, contractor_contact, type,
 	start_date, end_date, location, pm, department, value, retention, status,
 	execution_status, progress, received, variation_total, planned_completion,
-	documents, activity, created_at, updated_at, pm_project_id, conversation_id`
+	documents, activity, created_at, updated_at, pm_project_id, conversation_id,
+	COALESCE(currency,'') AS currency`
 
 func (s *GovStore) ListContracts(ctx context.Context) ([]models.GovContract, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+govContractCols+` FROM gov_contracts ORDER BY created_at DESC`)
@@ -118,13 +119,13 @@ func (s *GovStore) CreateContract(ctx context.Context, c models.GovContract) (*m
 		INSERT INTO gov_contracts
 			(id, number, name, contractor, contractor_id, contractor_contact, type, start_date, end_date,
 			 location, pm, department, value, retention, status, execution_status, progress, received,
-			 variation_total, planned_completion, documents, activity, pm_project_id, conversation_id)
+			 variation_total, planned_completion, documents, activity, pm_project_id, conversation_id, currency)
 		VALUES ($1,$2,$3,$4,NULLIF($5,''),$6,$7,NULLIF($8,''),NULLIF($9,''),$10,$11,$12,$13,$14,$15,$16,$17,$18,
-		        $19,NULLIF($20,''),$21::jsonb,$22::jsonb,$23,$24)
+		        $19,NULLIF($20,''),$21::jsonb,$22::jsonb,$23,$24,COALESCE(NULLIF($25,''),'UGX'))
 		RETURNING `+govContractCols,
 		c.ID, c.Number, c.Name, c.Contractor, c.ContractorID, c.ContractorContact, c.Type, c.StartDate, c.EndDate,
 		c.Location, c.PM, c.Department, c.Value, c.Retention, string(c.Status), exec, c.Progress, c.Received,
-		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID)
+		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID, c.Currency)
 	return scanGovContract(row)
 }
 
@@ -143,12 +144,12 @@ func (s *GovStore) UpdateContract(ctx context.Context, c models.GovContract) (*m
 			start_date=NULLIF($7,''), end_date=NULLIF($8,''), location=$9, pm=$10, department=$11,
 			value=$12, retention=$13, status=$14, execution_status=$15, progress=$16, received=$17,
 			variation_total=$18, planned_completion=NULLIF($19,''), documents=$20::jsonb, activity=$21::jsonb,
-			pm_project_id=$22, conversation_id=$23, updated_at=NOW()
+			pm_project_id=$22, conversation_id=$23, currency=COALESCE(NULLIF($24,''),'UGX'), updated_at=NOW()
 		WHERE id=$1
 		RETURNING `+govContractCols,
 		c.ID, c.Name, c.Contractor, c.ContractorID, c.ContractorContact, c.Type, c.StartDate, c.EndDate,
 		c.Location, c.PM, c.Department, c.Value, c.Retention, string(c.Status), exec, c.Progress, c.Received,
-		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID)
+		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID, c.Currency)
 	cc, err := scanGovContract(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
@@ -334,7 +335,7 @@ func scanGovContract(row pgx.Row) (*models.GovContract, error) {
 	if err := row.Scan(&c.ID, &c.Number, &c.Name, &c.Contractor, &contractorID, &c.ContractorContact, &c.Type,
 		&startDate, &endDate, &c.Location, &c.PM, &c.Department, &c.Value, &c.Retention, &status,
 		&execStatus, &c.Progress, &c.Received, &c.VariationTotal, &plannedCompletion,
-		&docs, &act, &created, &updated, &c.PMProjectID, &c.ConversationID); err != nil {
+		&docs, &act, &created, &updated, &c.PMProjectID, &c.ConversationID, &c.Currency); err != nil {
 		return nil, err
 	}
 	c.Status = models.GovStatus(status)
