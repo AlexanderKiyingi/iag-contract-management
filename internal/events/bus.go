@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -189,7 +190,11 @@ func (b *Bus) DispatchOutbox(ctx context.Context, row outbox.Row) error {
 
 // PublishAlert emits contracts.alert.raised for iag-notifications policy consumers.
 func (b *Bus) PublishAlert(ctx context.Context, channel, recipient, templateID string, variables map[string]string, key string) {
-	if !b.enabled || recipient == "" || templateID == "" {
+	if !b.enabled || templateID == "" {
+		return
+	}
+	if recipient == "" {
+		warnNoNotifyRecipient()
 		return
 	}
 	vars := map[string]any{}
@@ -242,4 +247,16 @@ func MilestoneDueTemplateID() string {
 		return t
 	}
 	return "contracts-milestone-due-soon"
+}
+
+var notifyRecipientWarnOnce sync.Once
+
+// warnNoNotifyRecipient logs once when an alert is dropped for want of a
+// recipient. Without it an unset NOTIFY_DEFAULT_RECIPIENT is indistinguishable
+// from "no alerts were raised": the emitter returns early, nothing reaches the
+// notifications service, and no error appears anywhere.
+func warnNoNotifyRecipient() {
+	notifyRecipientWarnOnce.Do(func() {
+		slog.Warn("contracts alert dropped: no recipient and NOTIFY_DEFAULT_RECIPIENT is unset; contracts.alert.raised events will not be emitted")
+	})
 }
