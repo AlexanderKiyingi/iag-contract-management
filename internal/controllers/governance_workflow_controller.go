@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
 )
@@ -305,7 +307,53 @@ func (g *GovernanceController) AdvanceVariation(w http.ResponseWriter, r *http.R
 		g.postContractSystem(updated.ContractID,
 			"Variation "+strings.TrimSpace(updated.Number)+" approved")
 	}
+	g.notifyGovDecision(r.Context(), "Variation "+strings.TrimSpace(updated.Number),
+		updated.ID, outcomeFor(approved), updated.Stage, "")
 	views.JSON(w, http.StatusOK, updated)
+}
+
+// outcomeFor maps a stage advance onto the two approval templates: a variation
+// that cleared its final stage is a decision, one that only moved forward is
+// still pending the next desk.
+func outcomeFor(complete bool) string {
+	if complete {
+		return "approved"
+	}
+	return "pending"
+}
+
+// notifyGovDecision reports a governance approval step to the notifications
+// desk. Governance records carry an approver trail but no requester address —
+// approvals are by named actor, not by account — so NOTIFY_DEFAULT_RECIPIENT
+// is the only recipient available. Best effort: the decision is committed and
+// must not fail on a notification problem.
+// preferred is used when the record names an addressable requester; governance
+// records mostly do not, so it falls back to the desk.
+func (g *GovernanceController) notifyGovDecision(ctx context.Context, what, id, outcome string, stage int, preferred string) {
+	if g.events == nil {
+		return
+	}
+	desk := events.DefaultNotifyRecipient()
+	// Requester is free text — a name on most records, an address on some.
+	// Only route to it when it is actually addressable.
+	if strings.Contains(preferred, "@") {
+		desk = strings.TrimSpace(preferred)
+	}
+	if desk == "" {
+		return
+	}
+	template := "approval.decision"
+	title := what + " " + outcome
+	body := what + " was " + outcome + "."
+	if outcome == "pending" {
+		template = "approval.pending"
+		title = what + " awaiting approval"
+		body = what + " advanced and is now awaiting stage " + strconv.Itoa(stage) + "."
+	}
+	g.events.PublishAlert(ctx, "", desk, template, map[string]string{
+		"Title": title,
+		"Body":  body,
+	}, id)
 }
 
 func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Request) {
@@ -322,5 +370,7 @@ func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Re
 		views.WriteError(w, err)
 		return
 	}
+	g.notifyGovDecision(r.Context(), "Variation "+strings.TrimSpace(updated.Number),
+		updated.ID, "rejected", updated.Stage, "")
 	views.JSON(w, http.StatusOK, updated)
 }

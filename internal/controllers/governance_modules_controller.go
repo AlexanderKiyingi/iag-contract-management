@@ -111,6 +111,8 @@ func (g *GovernanceController) AdvanceRequisition(w http.ResponseWriter, r *http
 			"department": updated.Department,
 		}, updated.No)
 	}
+	g.notifyGovDecision(r.Context(), "Requisition "+strings.TrimSpace(updated.No),
+		updated.ID, outcomeFor(approved), updated.Stage, updated.Requester)
 	views.JSON(w, http.StatusOK, updated)
 }
 
@@ -128,6 +130,8 @@ func (g *GovernanceController) RejectRequisition(w http.ResponseWriter, r *http.
 		views.WriteError(w, err)
 		return
 	}
+	g.notifyGovDecision(r.Context(), "Requisition "+strings.TrimSpace(updated.No),
+		updated.ID, "rejected", updated.Stage, updated.Requester)
 	views.JSON(w, http.StatusOK, updated)
 }
 
