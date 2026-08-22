@@ -3,6 +3,8 @@ package persistence
 import (
 	"context"
 	"time"
+
+	platformdb "github.com/alvor-technologies/iag-platform-go/db"
 )
 
 func (p *Postgres) LogAPIRequest(ctx context.Context, method, path string, statusCode int, userName string, durationMs int, clientIP string) error {
@@ -23,8 +25,12 @@ func (p *Postgres) ListAPIAuditLogs(ctx context.Context, limit int) ([]map[strin
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	var total int
-	if err := p.Pool.QueryRow(ctx, `SELECT COUNT(*)::int FROM contract_api_audit`).Scan(&total); err != nil {
+	// Bounded: contract_api_audit takes a row per API request, so an
+	// unqualified COUNT(*) is a full scan of the fastest-growing table in the
+	// service, run to put a number beside at most 200 rows.
+	total, _, err := platformdb.CountBounded(ctx, p.Pool, platformdb.DefaultCountCap,
+		"FROM contract_api_audit")
+	if err != nil {
 		return nil, 0, err
 	}
 	rows, err := p.Pool.Query(ctx, `
