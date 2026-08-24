@@ -190,10 +190,18 @@ func (b *Bus) DispatchOutbox(ctx context.Context, row outbox.Row) error {
 
 // PublishAlert emits contracts.alert.raised for iag-notifications policy consumers.
 func (b *Bus) PublishAlert(ctx context.Context, channel, recipient, templateID string, variables map[string]string, key string) {
+	b.PublishAlertTo(ctx, channel, "", recipient, templateID, variables, key)
+}
+
+// PublishAlertTo addresses a logical audience ("approvals.contracts") whose
+// recipients an administrator maintains centrally, falling back to recipient
+// until that audience is routed. Prefer it wherever the destination is a desk
+// rather than a specific person.
+func (b *Bus) PublishAlertTo(ctx context.Context, channel, audience, recipient, templateID string, variables map[string]string, key string) {
 	if !b.enabled || templateID == "" {
 		return
 	}
-	if recipient == "" {
+	if recipient == "" && audience == "" {
 		warnNoNotifyRecipient()
 		return
 	}
@@ -209,6 +217,9 @@ func (b *Bus) PublishAlert(ctx context.Context, channel, recipient, templateID s
 		"recipient":  recipient,
 		"templateId": templateID,
 		"variables":  vars,
+	}
+	if audience != "" {
+		data["audience"] = audience
 	}
 	b.PublishCommercial(ctx, TypeAlertRaised, data, key)
 }

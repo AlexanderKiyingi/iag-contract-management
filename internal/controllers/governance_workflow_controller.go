@@ -323,24 +323,27 @@ func outcomeFor(complete bool) string {
 }
 
 // notifyGovDecision reports a governance approval step to the notifications
-// desk. Governance records carry an approver trail but no requester address —
-// approvals are by named actor, not by account — so NOTIFY_DEFAULT_RECIPIENT
-// is the only recipient available. Best effort: the decision is committed and
-// must not fail on a notification problem.
-// preferred is used when the record names an addressable requester; governance
-// records mostly do not, so it falls back to the desk.
+// desk. Governance records carry an approver trail but usually no requester
+// address — approvals are by named actor, not by account.
+//
+// preferred is the record's requester when it is an addressable one. That case
+// deliberately sends NO audience: an audience resolves to whoever an admin has
+// put on the approvals desk, which is right for a desk notification and wrong
+// for one aimed at a named person. Only the desk fallback is routable.
+//
+// Best effort: the decision is committed and must not fail on a notification
+// problem.
 func (g *GovernanceController) notifyGovDecision(ctx context.Context, what, id, outcome string, stage int, preferred string) {
 	if g.events == nil {
 		return
 	}
-	desk := events.DefaultNotifyRecipient()
 	// Requester is free text — a name on most records, an address on some.
 	// Only route to it when it is actually addressable.
+	recipient := events.DefaultNotifyRecipient()
+	audience := "approvals.contracts"
 	if strings.Contains(preferred, "@") {
-		desk = strings.TrimSpace(preferred)
-	}
-	if desk == "" {
-		return
+		recipient = strings.TrimSpace(preferred)
+		audience = ""
 	}
 	template := "approval.decision"
 	title := what + " " + outcome
@@ -350,7 +353,7 @@ func (g *GovernanceController) notifyGovDecision(ctx context.Context, what, id, 
 		title = what + " awaiting approval"
 		body = what + " advanced and is now awaiting stage " + strconv.Itoa(stage) + "."
 	}
-	g.events.PublishAlert(ctx, "", desk, template, map[string]string{
+	g.events.PublishAlertTo(ctx, "", audience, recipient, template, map[string]string{
 		"Title": title,
 		"Body":  body,
 	}, id)
