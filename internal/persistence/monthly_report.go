@@ -15,7 +15,9 @@ import (
 
 // ---------------- Contractors ----------------
 
-const contractorCols = `id, name, contact, COALESCE(platform_user_id,'') AS platform_user_id, COALESCE(user_email,'') AS user_email, created_at, updated_at`
+const contractorCols = `id, name, contact, COALESCE(platform_user_id,'') AS platform_user_id, ` +
+	`COALESCE(user_email,'') AS user_email, company, code, username, type, address, phone, ` +
+	`email, payment_details, trade, status, notes, attachments, created_at, updated_at`
 
 func (s *GovStore) ListContractors(ctx context.Context) ([]models.GovContractor, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+contractorCols+` FROM gov_contractors ORDER BY name`)
@@ -45,9 +47,16 @@ func (s *GovStore) GetContractor(ctx context.Context, id string) (*models.GovCon
 
 func (s *GovStore) CreateContractor(ctx context.Context, c models.GovContractor) (*models.GovContractor, error) {
 	row := s.pool.QueryRow(ctx, `
-		INSERT INTO gov_contractors (id, name, contact, platform_user_id, user_email)
-		VALUES ($1,$2,$3,NULLIF($4,''),NULLIF($5,'')) RETURNING `+contractorCols,
-		c.ID, c.Name, c.Contact, c.PlatformUserID, c.UserEmail)
+		INSERT INTO gov_contractors (
+			id, name, contact, platform_user_id, user_email,
+			company, code, username, type, address, phone, email,
+			payment_details, trade, status, notes, attachments)
+		VALUES ($1,$2,$3,NULLIF($4,''),NULLIF($5,''),
+			$6,$7,$8,$9,$10,$11,$12,$13,$14,COALESCE(NULLIF($15,''),'Active'),$16,$17)
+		RETURNING `+contractorCols,
+		c.ID, c.Name, c.Contact, c.PlatformUserID, c.UserEmail,
+		c.Company, c.Code, c.Username, c.Type, c.Address, c.Phone, c.Email,
+		c.PaymentDetails, c.Trade, c.Status, c.Notes, c.Attachments)
 	return scanContractor(row)
 }
 
@@ -68,9 +77,14 @@ func (s *GovStore) UpsertContractorByName(ctx context.Context, c models.GovContr
 func (s *GovStore) UpdateContractor(ctx context.Context, c models.GovContractor) (*models.GovContractor, error) {
 	row := s.pool.QueryRow(ctx, `
 		UPDATE gov_contractors SET name=$2, contact=$3, platform_user_id=NULLIF($4,''),
-			user_email=NULLIF($5,''), updated_at=NOW()
+			user_email=NULLIF($5,''), company=$6, code=$7, username=$8, type=$9,
+			address=$10, phone=$11, email=$12, payment_details=$13, trade=$14,
+			status=COALESCE(NULLIF($15,''),'Active'), notes=$16, attachments=$17,
+			updated_at=NOW()
 		WHERE id=$1 RETURNING `+contractorCols,
-		c.ID, c.Name, c.Contact, c.PlatformUserID, c.UserEmail)
+		c.ID, c.Name, c.Contact, c.PlatformUserID, c.UserEmail,
+		c.Company, c.Code, c.Username, c.Type, c.Address, c.Phone, c.Email,
+		c.PaymentDetails, c.Trade, c.Status, c.Notes, c.Attachments)
 	cc, err := scanContractor(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
@@ -91,7 +105,12 @@ func (s *GovStore) DeleteContractor(ctx context.Context, id string) error {
 
 func scanContractor(row pgx.Row) (*models.GovContractor, error) {
 	var c models.GovContractor
-	if err := row.Scan(&c.ID, &c.Name, &c.Contact, &c.PlatformUserID, &c.UserEmail, &c.CreatedAt, &c.UpdatedAt); err != nil {
+	if err := row.Scan(
+		&c.ID, &c.Name, &c.Contact, &c.PlatformUserID, &c.UserEmail,
+		&c.Company, &c.Code, &c.Username, &c.Type, &c.Address, &c.Phone, &c.Email,
+		&c.PaymentDetails, &c.Trade, &c.Status, &c.Notes, &c.Attachments,
+		&c.CreatedAt, &c.UpdatedAt,
+	); err != nil {
 		return nil, err
 	}
 	return &c, nil

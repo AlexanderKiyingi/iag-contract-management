@@ -18,8 +18,26 @@ type GovContractor struct {
 	Contact string `json:"contact,omitempty"`
 	// PlatformUserID / UserEmail bind this contractor to a login so that user is
 	// scoped to this contractor's contracts in the portal. Either matches.
-	PlatformUserID string    `json:"platformUserId,omitempty"`
-	UserEmail      string    `json:"userEmail,omitempty"`
+	//
+	// UserEmail is the LOGIN binding and is not the same thing as Email below,
+	// which is the contractor's business contact address. They are often the
+	// same value; conflating the columns would grant portal access to whoever a
+	// contact address was last set to.
+	PlatformUserID string `json:"platformUserId,omitempty"`
+	UserEmail      string `json:"userEmail,omitempty"`
+	// Master-data columns carried by the Contract Manager app (migration 019).
+	Company        string    `json:"company,omitempty"`
+	Code           string    `json:"code,omitempty"`
+	Username       string    `json:"username,omitempty"`
+	Type           string    `json:"type,omitempty"`
+	Address        string    `json:"address,omitempty"`
+	Phone          string    `json:"phone,omitempty"`
+	Email          string    `json:"email,omitempty"`
+	PaymentDetails string    `json:"paymentDetails,omitempty"`
+	Trade          string    `json:"trade,omitempty"`
+	Status         string    `json:"status,omitempty"`
+	Notes          string    `json:"notes,omitempty"`
+	Attachments    string    `json:"attachments,omitempty"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -29,6 +47,18 @@ type GovContractorInput struct {
 	Contact        string `json:"contact"`
 	PlatformUserID string `json:"platformUserId"`
 	UserEmail      string `json:"userEmail"`
+	Company        string `json:"company"`
+	Code           string `json:"code"`
+	Username       string `json:"username"`
+	Type           string `json:"type"`
+	Address        string `json:"address"`
+	Phone          string `json:"phone"`
+	Email          string `json:"email"`
+	PaymentDetails string `json:"paymentDetails"`
+	Trade          string `json:"trade"`
+	Status         string `json:"status"`
+	Notes          string `json:"notes"`
+	Attachments    string `json:"attachments"`
 }
 
 type GovContractorPatch struct {
@@ -36,6 +66,49 @@ type GovContractorPatch struct {
 	Contact        *string `json:"contact,omitempty"`
 	PlatformUserID *string `json:"platformUserId,omitempty"`
 	UserEmail      *string `json:"userEmail,omitempty"`
+	Company        *string `json:"company,omitempty"`
+	Code           *string `json:"code,omitempty"`
+	Username       *string `json:"username,omitempty"`
+	Type           *string `json:"type,omitempty"`
+	Address        *string `json:"address,omitempty"`
+	Phone          *string `json:"phone,omitempty"`
+	Email          *string `json:"email,omitempty"`
+	PaymentDetails *string `json:"paymentDetails,omitempty"`
+	Trade          *string `json:"trade,omitempty"`
+	Status         *string `json:"status,omitempty"`
+	Notes          *string `json:"notes,omitempty"`
+	Attachments    *string `json:"attachments,omitempty"`
+}
+
+// ApplyTo folds a patch onto an existing contractor. Only fields present in the
+// request body are touched, which is what keeps a partial update from blanking
+// the columns the caller did not send.
+func (p GovContractorPatch) ApplyTo(c *GovContractor) {
+	for _, f := range []struct {
+		in  *string
+		out *string
+	}{
+		{p.Name, &c.Name},
+		{p.Contact, &c.Contact},
+		{p.PlatformUserID, &c.PlatformUserID},
+		{p.UserEmail, &c.UserEmail},
+		{p.Company, &c.Company},
+		{p.Code, &c.Code},
+		{p.Username, &c.Username},
+		{p.Type, &c.Type},
+		{p.Address, &c.Address},
+		{p.Phone, &c.Phone},
+		{p.Email, &c.Email},
+		{p.PaymentDetails, &c.PaymentDetails},
+		{p.Trade, &c.Trade},
+		{p.Status, &c.Status},
+		{p.Notes, &c.Notes},
+		{p.Attachments, &c.Attachments},
+	} {
+		if f.in != nil {
+			*f.out = *f.in
+		}
+	}
 }
 
 // GovProjectManager is a governed, reusable person who runs contracts — the

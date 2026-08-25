@@ -60,6 +60,18 @@ func (g *GovernanceController) CreateContractor(w http.ResponseWriter, r *http.R
 		Contact:        in.Contact,
 		PlatformUserID: strings.TrimSpace(in.PlatformUserID),
 		UserEmail:      strings.TrimSpace(in.UserEmail),
+		Company:        in.Company,
+		Code:           in.Code,
+		Username:       in.Username,
+		Type:           in.Type,
+		Address:        in.Address,
+		Phone:          in.Phone,
+		Email:          in.Email,
+		PaymentDetails: in.PaymentDetails,
+		Trade:          in.Trade,
+		Status:         in.Status,
+		Notes:          in.Notes,
+		Attachments:    in.Attachments,
 	})
 	if err != nil {
 		views.WriteError(w, err)
@@ -120,18 +132,9 @@ func (g *GovernanceController) PatchContractor(w http.ResponseWriter, r *http.Re
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if p.Name != nil {
-		existing.Name = *p.Name
-	}
-	if p.Contact != nil {
-		existing.Contact = *p.Contact
-	}
-	if p.PlatformUserID != nil {
-		existing.PlatformUserID = strings.TrimSpace(*p.PlatformUserID)
-	}
-	if p.UserEmail != nil {
-		existing.UserEmail = strings.TrimSpace(*p.UserEmail)
-	}
+	p.ApplyTo(existing)
+	existing.PlatformUserID = strings.TrimSpace(existing.PlatformUserID)
+	existing.UserEmail = strings.TrimSpace(existing.UserEmail)
 	updated, err := g.gov.UpdateContractor(r.Context(), *existing)
 	if err != nil {
 		views.WriteError(w, err)
