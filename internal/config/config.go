@@ -56,10 +56,10 @@ type Config struct {
 	RequestTimeout time.Duration
 
 	// SeedOnStartup writes the demo workspace into the DB on first run (when
-	// the DB is empty). Defaults to true in non-production envs and false in
-	// production, where leaving it on can collide with legacy table shapes
-	// (e.g. audit_entries.id BIGINT vs the current schema's TEXT). Set
-	// SEED_ON_STARTUP=true|false to override.
+	// the DB is empty). Always false in production — the demo workspace was
+	// purged from the platform and re-seeding it would also collide with legacy
+	// table shapes (e.g. audit_entries.id BIGINT vs the current schema's TEXT).
+	// Elsewhere it defaults to true; set SEED_ON_STARTUP=true|false to override.
 	SeedOnStartup bool
 
 	// S3 is the S3-compatible object store (AWS S3 / Cloudflare R2 / MinIO)
@@ -119,9 +119,15 @@ func Load() Config {
 		}
 	}
 
-	seedOnStartup := env != "production"
-	if raw := strings.TrimSpace(os.Getenv("SEED_ON_STARTUP")); raw != "" {
-		seedOnStartup = strings.EqualFold(raw, "true")
+	// Production never seeds. The demo workspace and the seeded gov_* rows were
+	// purged from the platform and must not come back, so the environment check
+	// wins over SEED_ON_STARTUP rather than merely setting its default.
+	seedOnStartup := false
+	if env != "production" {
+		seedOnStartup = true
+		if raw := strings.TrimSpace(os.Getenv("SEED_ON_STARTUP")); raw != "" {
+			seedOnStartup = strings.EqualFold(raw, "true")
+		}
 	}
 
 	return Config{
