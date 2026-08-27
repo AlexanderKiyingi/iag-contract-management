@@ -155,15 +155,18 @@ func (b *Bus) PublishCommercial(ctx context.Context, eventType string, data map[
 		slog.Warn("contract event marshal failed", "type", eventType, "err", err)
 		return
 	}
-	if err := b.writer.WriteMessages(ctx, kafka.Message{
-		Topic: TopicCommercial,
-		Key:   []byte(key),
-		Value: body,
-		Headers: []kafka.Header{
-			{Key: "ce-type", Value: []byte(eventType)},
-			{Key: "ce-source", Value: []byte(Source)},
-		},
-	}); err != nil {
+	if err := // No Topic on the Message: the writer is dedicated to one topic and already
+		// carries it, and kafka-go rejects a Message that sets Topic as well ("Topic
+		// must not be specified for both Writer and Message"). It fails before
+		// sending, so every publish errored while looking transient to the retry loop.
+		b.writer.WriteMessages(ctx, kafka.Message{
+			Key:   []byte(key),
+			Value: body,
+			Headers: []kafka.Header{
+				{Key: "ce-type", Value: []byte(eventType)},
+				{Key: "ce-source", Value: []byte(Source)},
+			},
+		}); err != nil {
 		slog.Warn("contract event publish failed", "type", eventType, "err", err)
 	}
 }
@@ -177,8 +180,11 @@ func (b *Bus) DispatchOutbox(ctx context.Context, row outbox.Row) error {
 		// Bus disabled: treat as delivered so the row isn't retried forever.
 		return nil
 	}
+	// No Topic on the Message: the writer is dedicated to one topic and already
+	// carries it, and kafka-go rejects a Message that sets Topic as well ("Topic
+	// must not be specified for both Writer and Message"). It fails before
+	// sending, so every publish errored while looking transient to the retry loop.
 	return b.writer.WriteMessages(ctx, kafka.Message{
-		Topic: TopicCommercial,
 		Key:   []byte(row.EventKey),
 		Value: row.Payload,
 		Headers: []kafka.Header{
