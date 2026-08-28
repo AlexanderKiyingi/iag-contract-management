@@ -374,6 +374,18 @@ func (g *GovernanceController) PatchMilestone(w http.ResponseWriter, r *http.Req
 		views.Error(w, http.StatusBadRequest, "invalid milestone status")
 		return
 	}
+	if p.ContractID != nil && strings.TrimSpace(*p.ContractID) != existing.ContractID {
+		target := strings.TrimSpace(*p.ContractID)
+		if target == "" {
+			views.Error(w, http.StatusBadRequest, "contractId cannot be cleared")
+			return
+		}
+		if _, err := g.gov.GetContract(r.Context(), target); err != nil {
+			views.Error(w, http.StatusBadRequest, "contractId does not name a contract")
+			return
+		}
+		existing.ContractID = target
+	}
 	applyMilestonePatch(existing, p)
 	updated, err := g.gov.UpdateMilestone(r.Context(), *existing)
 	if err != nil {

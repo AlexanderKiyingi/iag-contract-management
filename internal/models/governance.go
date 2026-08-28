@@ -309,6 +309,11 @@ type GovMilestoneInput struct {
 }
 
 type GovMilestonePatch struct {
+	// A milestone is created under a contract, but it can be filed under the
+	// wrong one. Nothing else could correct that: the create path takes the
+	// contract from the URL and the patch used to have no field for it, so the
+	// row was stuck where it landed.
+	ContractID       *string           `json:"contractId,omitempty"`
 	Name             *string           `json:"name,omitempty"`
 	Value            *int64            `json:"value,omitempty"`
 	TargetDate       *string           `json:"targetDate,omitempty"`

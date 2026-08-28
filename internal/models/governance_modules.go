@@ -165,6 +165,21 @@ type GovObligation struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
+// ObligationPatch is the PATCH body. Every field is a pointer so that an empty
+// string means "clear this" and an absent key means "leave it alone" — the
+// previous handler treated both as "leave it alone", which made an obligation's
+// owner, evidence and escalation impossible to clear once set.
+type ObligationPatch struct {
+	ContractID *string `json:"contractId,omitempty"`
+	Type       *string `json:"type,omitempty"`
+	Owner      *string `json:"owner,omitempty"`
+	DueDate    *string `json:"dueDate,omitempty"`
+	Frequency  *string `json:"frequency,omitempty"`
+	Evidence   *string `json:"evidence,omitempty"`
+	Status     *string `json:"status,omitempty"`
+	Escalation *string `json:"escalation,omitempty"`
+}
+
 type ObligationInput struct {
 	Type       string `json:"type"`
 	Owner      string `json:"owner"`

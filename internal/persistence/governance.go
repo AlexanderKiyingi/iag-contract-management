@@ -299,13 +299,13 @@ func (s *GovStore) UpdateMilestone(ctx context.Context, m models.GovMilestone) (
 	cr, _ := jsonb(m.CompletionReport)
 	row := s.pool.QueryRow(ctx, `
 		UPDATE gov_milestones SET
-			name=$2, value=$3, target_date=NULLIF($4,''), status=$5, scope=$6::jsonb,
+			contract_id=$13, name=$2, value=$3, target_date=NULLIF($4,''), status=$5, scope=$6::jsonb,
 			deliverables=$7::jsonb, checklist=$8::jsonb, docs=$9::jsonb, comments=$10::jsonb,
 			inspection=$11::jsonb, completion_report=$12::jsonb, updated_at=NOW()
 		WHERE id=$1
 		RETURNING id, contract_id, name, value, target_date, status, scope, deliverables, checklist,
 		          docs, comments, inspection, completion_report, sort_order`,
-		m.ID, m.Name, m.Value, m.TargetDate, m.Status, scope, deliv, chk, docs, com, insp, cr)
+		m.ID, m.Name, m.Value, m.TargetDate, m.Status, scope, deliv, chk, docs, com, insp, cr, m.ContractID)
 	mm, err := scanGovMilestone(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound

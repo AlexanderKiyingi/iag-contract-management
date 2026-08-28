@@ -280,6 +280,11 @@ func (g *GovernanceController) CreateValuation(w http.ResponseWriter, r *http.Re
 		views.Error(w, http.StatusBadRequest, "contractorName is required")
 		return
 	}
+	status := valuationStatusOrDefault(in.Status, models.ValuationDraft)
+	if status == "" {
+		views.Error(w, http.StatusBadRequest, "invalid status")
+		return
+	}
 	created, err := g.gov.CreateValuation(r.Context(), models.Valuation{
 		ID:                       models.NewGovID("VAL"),
 		ContractorID:             in.ContractorID,
@@ -292,6 +297,13 @@ func (g *GovernanceController) CreateValuation(w http.ResponseWriter, r *http.Re
 		CEOApproval:              in.CEOApproval,
 		Remarks:                  in.Remarks,
 		VerifiedDate:             in.VerifiedDate,
+		Reference:                strings.TrimSpace(in.Reference),
+		DueDate:                  in.DueDate,
+		Currency:                 normalizeValuationCurrency(in.Currency),
+		Division:                 in.Division,
+		Tax:                      in.Tax,
+		Status:                   status,
+		Attachments:              in.Attachments,
 	})
 	if err != nil {
 		views.WriteError(w, err)
@@ -325,12 +337,51 @@ func (g *GovernanceController) UpdateValuation(w http.ResponseWriter, r *http.Re
 	existing.CEOApproval = in.CEOApproval
 	existing.Remarks = in.Remarks
 	existing.VerifiedDate = in.VerifiedDate
+	existing.Reference = strings.TrimSpace(in.Reference)
+	existing.DueDate = in.DueDate
+	existing.Currency = normalizeValuationCurrency(in.Currency)
+	existing.Division = in.Division
+	existing.Tax = in.Tax
+	existing.Attachments = in.Attachments
+	// This handler rebuilds the row from the input rather than merging a patch,
+	// so an omitted status would zero a real one. Keep what is stored when the
+	// payload says nothing; reject a value that is not a status at all.
+	status := valuationStatusOrDefault(in.Status, existing.Status)
+	if status == "" {
+		views.Error(w, http.StatusBadRequest, "invalid status")
+		return
+	}
+	existing.Status = status
 	updated, err := g.gov.UpdateValuation(r.Context(), *existing)
 	if err != nil {
 		views.WriteError(w, err)
 		return
 	}
 	views.JSON(w, http.StatusOK, updated)
+}
+
+// valuationStatusOrDefault resolves an incoming status: empty falls back to
+// `fallback`, a recognised value is kept, and anything else returns "" so the
+// caller can answer 400 rather than storing a status nothing will match on.
+func valuationStatusOrDefault(in, fallback models.ValuationStatus) models.ValuationStatus {
+	trimmed := models.ValuationStatus(strings.TrimSpace(string(in)))
+	if trimmed == "" {
+		if fallback == "" {
+			return models.ValuationDraft
+		}
+		return fallback
+	}
+	if !trimmed.Valid() {
+		return ""
+	}
+	return trimmed
+}
+
+// The platform's base currency is UGX and the app sends the code uppercased,
+// but an import or a hand-rolled client may not. Store one spelling so grouping
+// a period's valuations by currency does not split "ugx" from "UGX".
+func normalizeValuationCurrency(in string) string {
+	return strings.ToUpper(strings.TrimSpace(in))
 }
 
 func (g *GovernanceController) DeleteValuation(w http.ResponseWriter, r *http.Request) {

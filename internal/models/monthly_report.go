@@ -169,32 +169,78 @@ type ProgressReportInput struct {
 // ----- Valuations (the "Contractors verified" sheet) -----
 
 type Valuation struct {
-	ID                       string    `json:"id"`
-	ContractorID             string    `json:"contractorId,omitempty"`
-	ContractorName           string    `json:"contractorName"`
-	Period                   string    `json:"period,omitempty"`
-	ContractSum              int64     `json:"contractSum"`
-	AmountPaid               int64     `json:"amountPaid"`
-	VerifiedValueOwed        int64     `json:"verifiedValueOwed"`
-	ConsultantRecommendation int64     `json:"consultantRecommendation"`
-	CEOApproval              int64     `json:"ceoApproval"`
-	Remarks                  string    `json:"remarks,omitempty"`
-	VerifiedDate             string    `json:"verifiedDate,omitempty"`
-	CreatedAt                time.Time `json:"createdAt"`
-	UpdatedAt                time.Time `json:"updatedAt"`
-}
-
-type ValuationInput struct {
-	ContractorID             string `json:"contractorId"`
+	ID                       string `json:"id"`
+	ContractorID             string `json:"contractorId,omitempty"`
 	ContractorName           string `json:"contractorName"`
-	Period                   string `json:"period"`
+	Period                   string `json:"period,omitempty"`
 	ContractSum              int64  `json:"contractSum"`
 	AmountPaid               int64  `json:"amountPaid"`
 	VerifiedValueOwed        int64  `json:"verifiedValueOwed"`
 	ConsultantRecommendation int64  `json:"consultantRecommendation"`
 	CEOApproval              int64  `json:"ceoApproval"`
-	Remarks                  string `json:"remarks"`
-	VerifiedDate             string `json:"verifiedDate"`
+	Remarks                  string `json:"remarks,omitempty"`
+	VerifiedDate             string `json:"verifiedDate,omitempty"`
+	// Commercial fields (migration 024). A valuation is the contractor's
+	// invoice as well as a row on the monthly report, and the invoice half
+	// needs its own reference, dates, currency and tax.
+	Reference   string          `json:"reference,omitempty"`
+	DueDate     string          `json:"dueDate,omitempty"`
+	Currency    string          `json:"currency,omitempty"`
+	Division    string          `json:"division,omitempty"`
+	Tax         int64           `json:"tax"`
+	Status      ValuationStatus `json:"status"`
+	Attachments string          `json:"attachments,omitempty"`
+	// Computed on read, never stored — see migration 024.
+	BalanceDue int64     `json:"balanceDue"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+// ValuationStatus is the document state of a contractor invoice. It is separate
+// from the payment arithmetic: a valuation can be fully paid and still be Void,
+// and "how much is outstanding" is answered by BalanceDue, not by this.
+type ValuationStatus string
+
+const (
+	ValuationDraft     ValuationStatus = "Draft"
+	ValuationSubmitted ValuationStatus = "Submitted"
+	ValuationApproved  ValuationStatus = "Approved"
+	ValuationPaid      ValuationStatus = "Paid"
+	ValuationVoid      ValuationStatus = "Void"
+	ValuationCancelled ValuationStatus = "Cancelled"
+)
+
+func (s ValuationStatus) Valid() bool {
+	switch s {
+	case ValuationDraft, ValuationSubmitted, ValuationApproved,
+		ValuationPaid, ValuationVoid, ValuationCancelled:
+		return true
+	}
+	return false
+}
+
+// Balance recomputes the outstanding amount. Called on every read so the value
+// the API returns can never disagree with the two columns it derives from.
+func (v *Valuation) Balance() int64 { return v.VerifiedValueOwed - v.AmountPaid }
+
+type ValuationInput struct {
+	ContractorID             string          `json:"contractorId"`
+	ContractorName           string          `json:"contractorName"`
+	Period                   string          `json:"period"`
+	ContractSum              int64           `json:"contractSum"`
+	AmountPaid               int64           `json:"amountPaid"`
+	VerifiedValueOwed        int64           `json:"verifiedValueOwed"`
+	ConsultantRecommendation int64           `json:"consultantRecommendation"`
+	CEOApproval              int64           `json:"ceoApproval"`
+	Remarks                  string          `json:"remarks"`
+	VerifiedDate             string          `json:"verifiedDate"`
+	Reference                string          `json:"reference"`
+	DueDate                  string          `json:"dueDate"`
+	Currency                 string          `json:"currency"`
+	Division                 string          `json:"division"`
+	Tax                      int64           `json:"tax"`
+	Status                   ValuationStatus `json:"status"`
+	Attachments              string          `json:"attachments"`
 }
 
 // ----- Challenges register (report-level, period-scoped) -----

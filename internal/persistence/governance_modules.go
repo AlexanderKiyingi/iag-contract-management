@@ -147,9 +147,9 @@ func (s *GovStore) CreateObligation(ctx context.Context, o models.GovObligation)
 
 func (s *GovStore) UpdateObligation(ctx context.Context, o models.GovObligation) (*models.GovObligation, error) {
 	row := s.pool.QueryRow(ctx, `
-		UPDATE gov_obligations SET type=$2, owner=$3, due_date=NULLIF($4,''), frequency=$5, evidence=$6,
-			status=$7, escalation=$8, updated_at=NOW() WHERE id=$1 RETURNING `+obCols,
-		o.ID, o.Type, o.Owner, o.DueDate, o.Frequency, o.Evidence, o.Status, o.Escalation)
+		UPDATE gov_obligations SET contract_id=$9, type=$2, owner=$3, due_date=NULLIF($4,''), frequency=$5,
+			evidence=$6, status=$7, escalation=$8, updated_at=NOW() WHERE id=$1 RETURNING `+obCols,
+		o.ID, o.Type, o.Owner, o.DueDate, o.Frequency, o.Evidence, o.Status, o.Escalation, o.ContractID)
 	oo, err := scanObligation(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
@@ -373,6 +373,61 @@ func (s *GovStore) UpsertBudget(ctx context.Context, b models.GovBudget) (*model
 		return nil, err
 	}
 	return &out, nil
+}
+
+// RenameBudget moves a budget line to a new code, carrying its figures with it.
+//
+// The code is the primary key, so the app's "save" — an upsert POST — could
+// only ever insert a second row when a user corrected a code, leaving the
+// original behind with the same money on it. This is the rename that operation
+// actually is. `requisitions.budget_code` is a free-text reference rather than
+// a foreign key, so it is repointed here in the same transaction; nothing else
+// references a budget code.
+func (s *GovStore) RenameBudget(ctx context.Context, from, to string, b models.GovBudget) (*models.GovBudget, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	row := tx.QueryRow(ctx, `
+		UPDATE gov_budgets SET code=$2, name=$3, owner=$4, approved=$5, committed=$6, paid=$7,
+			updated_at=NOW()
+		WHERE code=$1
+		RETURNING code, name, owner, approved, committed, paid, created_at, updated_at`,
+		from, to, b.Name, b.Owner, b.Approved, b.Committed, b.Paid)
+	var out models.GovBudget
+	if err := row.Scan(&out.Code, &out.Name, &out.Owner, &out.Approved, &out.Committed, &out.Paid,
+		&out.CreatedAt, &out.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrGovNotFound
+		}
+		return nil, err
+	}
+	if from != to {
+		if _, err := tx.Exec(ctx, `UPDATE gov_requisitions SET budget_code=$2 WHERE budget_code=$1`,
+			from, to); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (s *GovStore) GetBudget(ctx context.Context, code string) (*models.GovBudget, error) {
+	row := s.pool.QueryRow(ctx, `SELECT code, name, owner, approved, committed, paid, created_at, updated_at
+		FROM gov_budgets WHERE code=$1`, code)
+	var b models.GovBudget
+	if err := row.Scan(&b.Code, &b.Name, &b.Owner, &b.Approved, &b.Committed, &b.Paid,
+		&b.CreatedAt, &b.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrGovNotFound
+		}
+		return nil, err
+	}
+	return &b, nil
 }
 
 func (s *GovStore) DeleteBudget(ctx context.Context, code string) error {

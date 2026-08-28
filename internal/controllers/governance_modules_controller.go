@@ -254,31 +254,49 @@ func (g *GovernanceController) PatchObligation(w http.ResponseWriter, r *http.Re
 	if g.handleErr(w, err) {
 		return
 	}
-	var in models.ObligationInput
+	var in models.ObligationPatch
 	if err := decodeJSON(r, &in); err != nil {
 		views.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if in.Type != "" {
-		o.Type = in.Type
+	// Moving an obligation to another contract is allowed, but only to one that
+	// exists — a bad id here would orphan the row where nothing lists it.
+	if in.ContractID != nil && strings.TrimSpace(*in.ContractID) != o.ContractID {
+		target := strings.TrimSpace(*in.ContractID)
+		if target == "" {
+			views.Error(w, http.StatusBadRequest, "contractId cannot be cleared")
+			return
+		}
+		if _, err := g.gov.GetContract(r.Context(), target); err != nil {
+			views.Error(w, http.StatusBadRequest, "contractId does not name a contract")
+			return
+		}
+		o.ContractID = target
 	}
-	if in.Owner != "" {
-		o.Owner = in.Owner
+	if in.Type != nil {
+		if strings.TrimSpace(*in.Type) == "" {
+			views.Error(w, http.StatusBadRequest, "type is required")
+			return
+		}
+		o.Type = *in.Type
 	}
-	if in.DueDate != "" {
-		o.DueDate = in.DueDate
+	if in.Owner != nil {
+		o.Owner = *in.Owner
 	}
-	if in.Frequency != "" {
-		o.Frequency = in.Frequency
+	if in.DueDate != nil {
+		o.DueDate = *in.DueDate
 	}
-	if in.Evidence != "" {
-		o.Evidence = in.Evidence
+	if in.Frequency != nil {
+		o.Frequency = *in.Frequency
 	}
-	if in.Status != "" {
-		o.Status = models.NormalizeObligationStatus(in.Status)
+	if in.Evidence != nil {
+		o.Evidence = *in.Evidence
 	}
-	if in.Escalation != "" {
-		o.Escalation = in.Escalation
+	if in.Status != nil {
+		o.Status = models.NormalizeObligationStatus(*in.Status)
+	}
+	if in.Escalation != nil {
+		o.Escalation = *in.Escalation
 	}
 	updated, err := g.gov.UpdateObligation(r.Context(), *o)
 	if err != nil {
@@ -503,6 +521,46 @@ func (g *GovernanceController) UpsertBudget(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	out, err := g.gov.UpsertBudget(r.Context(), models.GovBudget{Code: in.Code, Name: in.Name, Owner: in.Owner, Approved: in.Approved, Committed: in.Committed, Paid: in.Paid})
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, out)
+}
+
+// PatchBudget updates one budget line, including its code.
+//
+// The upsert POST cannot express a rename: the code is the primary key, so
+// POSTing a corrected code inserts a second line and leaves the original with
+// the same approved/committed/paid figures on it — the budget appears twice and
+// every total that sums the register doubles.
+func (g *GovernanceController) PatchBudget(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "budgets.update") {
+		return
+	}
+	from := strings.TrimSpace(pathSegmentAfter(r, "budgets"))
+	existing, err := g.gov.GetBudget(r.Context(), from)
+	if g.handleErr(w, err) {
+		return
+	}
+	var in models.BudgetInput
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	to := strings.TrimSpace(in.Code)
+	if to == "" {
+		to = existing.Code
+	}
+	if to != existing.Code {
+		if _, err := g.gov.GetBudget(r.Context(), to); err == nil {
+			views.Error(w, http.StatusConflict, "a budget with that code already exists")
+			return
+		}
+	}
+	out, err := g.gov.RenameBudget(r.Context(), from, to, models.GovBudget{
+		Name: in.Name, Owner: in.Owner, Approved: in.Approved, Committed: in.Committed, Paid: in.Paid,
+	})
 	if err != nil {
 		views.WriteError(w, err)
 		return

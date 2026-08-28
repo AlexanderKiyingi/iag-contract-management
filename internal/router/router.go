@@ -186,6 +186,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	gov.GET("/budgets", wrap(mvc.Governance.ListBudgets))
 	gov.POST("/budgets", wrap(mvc.Governance.UpsertBudget))
+	gov.PATCH("/budgets/:code", wrap(mvc.Governance.PatchBudget))
 	gov.DELETE("/budgets/:code", wrap(mvc.Governance.DeleteBudget))
 
 	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))
