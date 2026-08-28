@@ -6,8 +6,8 @@ import (
 	"github.com/alvor-technologies/iag-contract-management/internal/controllers"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
-	"github.com/alvor-technologies/iag-contract-management/internal/objstore"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
+	"github.com/alvor-technologies/iag-platform-go/objstore"
 )
 
 // MVC wires model, view, and controller layers.

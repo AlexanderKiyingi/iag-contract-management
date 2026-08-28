@@ -11,9 +11,9 @@ import (
 	"github.com/alvor-technologies/iag-contract-management/internal/chat"
 	"github.com/alvor-technologies/iag-contract-management/internal/events"
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
-	"github.com/alvor-technologies/iag-contract-management/internal/objstore"
 	"github.com/alvor-technologies/iag-contract-management/internal/persistence"
 	"github.com/alvor-technologies/iag-contract-management/internal/views"
+	"github.com/alvor-technologies/iag-platform-go/objstore"
 )
 
 // GovernanceController serves the contract-governance domain (governance
