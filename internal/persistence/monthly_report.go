@@ -267,6 +267,7 @@ func scanProgressReport(row pgx.Row) (*models.ProgressReport, error) {
 
 const valuationCols = `id, contractor_id, contractor_name, period, contract_sum, amount_paid,
 	verified_value_owed, consultant_recommendation, ceo_approval, remarks, verified_date,
+	reference, due_date, currency, division, tax, status, attachments,
 	created_at, updated_at`
 
 func (s *GovStore) ListValuations(ctx context.Context, period string) ([]models.Valuation, error) {
@@ -303,26 +304,39 @@ func (s *GovStore) GetValuation(ctx context.Context, id string) (*models.Valuati
 }
 
 func (s *GovStore) CreateValuation(ctx context.Context, v models.Valuation) (*models.Valuation, error) {
+	// The column defaults to 'Draft', but an explicit "" in the parameter list
+	// overrides that default and writes an empty status. Callers that predate
+	// the field (the monthly-report importer) send exactly that.
+	if v.Status == "" {
+		v.Status = models.ValuationDraft
+	}
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO gov_valuations
 			(id, contractor_id, contractor_name, period, contract_sum, amount_paid, verified_value_owed,
-			 consultant_recommendation, ceo_approval, remarks, verified_date)
-		VALUES ($1,NULLIF($2,''),$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			 consultant_recommendation, ceo_approval, remarks, verified_date,
+			 reference, due_date, currency, division, tax, status, attachments)
+		VALUES ($1,NULLIF($2,''),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		RETURNING `+valuationCols,
 		v.ID, v.ContractorID, v.ContractorName, v.Period, v.ContractSum, v.AmountPaid, v.VerifiedValueOwed,
-		v.ConsultantRecommendation, v.CEOApproval, v.Remarks, v.VerifiedDate)
+		v.ConsultantRecommendation, v.CEOApproval, v.Remarks, v.VerifiedDate,
+		v.Reference, v.DueDate, v.Currency, v.Division, v.Tax, string(v.Status), v.Attachments)
 	return scanValuation(row)
 }
 
 func (s *GovStore) UpdateValuation(ctx context.Context, v models.Valuation) (*models.Valuation, error) {
+	if v.Status == "" {
+		v.Status = models.ValuationDraft
+	}
 	row := s.pool.QueryRow(ctx, `
 		UPDATE gov_valuations SET
 			contractor_id=NULLIF($2,''), contractor_name=$3, period=$4, contract_sum=$5, amount_paid=$6,
 			verified_value_owed=$7, consultant_recommendation=$8, ceo_approval=$9, remarks=$10,
-			verified_date=$11, updated_at=NOW()
+			verified_date=$11, reference=$12, due_date=$13, currency=$14, division=$15, tax=$16,
+			status=$17, attachments=$18, updated_at=NOW()
 		WHERE id=$1 RETURNING `+valuationCols,
 		v.ID, v.ContractorID, v.ContractorName, v.Period, v.ContractSum, v.AmountPaid, v.VerifiedValueOwed,
-		v.ConsultantRecommendation, v.CEOApproval, v.Remarks, v.VerifiedDate)
+		v.ConsultantRecommendation, v.CEOApproval, v.Remarks, v.VerifiedDate,
+		v.Reference, v.DueDate, v.Currency, v.Division, v.Tax, string(v.Status), v.Attachments)
 	vv, err := scanValuation(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
@@ -344,14 +358,20 @@ func (s *GovStore) DeleteValuation(ctx context.Context, id string) error {
 func scanValuation(row pgx.Row) (*models.Valuation, error) {
 	var v models.Valuation
 	var contractorID *string
+	var status string
 	if err := row.Scan(&v.ID, &contractorID, &v.ContractorName, &v.Period, &v.ContractSum, &v.AmountPaid,
 		&v.VerifiedValueOwed, &v.ConsultantRecommendation, &v.CEOApproval, &v.Remarks, &v.VerifiedDate,
+		&v.Reference, &v.DueDate, &v.Currency, &v.Division, &v.Tax, &status, &v.Attachments,
 		&v.CreatedAt, &v.UpdatedAt); err != nil {
 		return nil, err
 	}
 	if contractorID != nil {
 		v.ContractorID = *contractorID
 	}
+	v.Status = models.ValuationStatus(status)
+	// Derived, never stored: computed here so every read path — list, get, and
+	// the RETURNING clause of a write — reports the same balance.
+	v.BalanceDue = v.Balance()
 	return &v, nil
 }
 

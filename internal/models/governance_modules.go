@@ -10,6 +10,24 @@ import (
 // RequisitionStages is the pre-contract approval chain.
 var RequisitionStages = []string{"Project Manager", "Department Head", "Finance", "Management"}
 
+// GovRequisitionPatch corrects a requisition's own description. As with
+// GovVariationPatch, status/stage/approvals and linkedContract are absent: the
+// chain routes own them.
+type GovRequisitionPatch struct {
+	No                *string `json:"no,omitempty"`
+	Title             *string `json:"title,omitempty"`
+	Department        *string `json:"department,omitempty"`
+	Requester         *string `json:"requester,omitempty"`
+	Type              *string `json:"type,omitempty"`
+	ProcurementMethod *string `json:"procurementMethod,omitempty"`
+	Supplier          *string `json:"supplier,omitempty"`
+	Estimate          *int64  `json:"estimate,omitempty"`
+	BudgetCode        *string `json:"budgetCode,omitempty"`
+	Urgency           *string `json:"urgency,omitempty"`
+	Justification     *string `json:"justification,omitempty"`
+	PMProjectID       *string `json:"pmProjectId,omitempty"`
+}
+
 type GovRequisition struct {
 	ID                string              `json:"id"`
 	No                string              `json:"no"`
@@ -79,7 +97,23 @@ func (rq *GovRequisition) Advance(by, date string) (approved bool, err error) {
 	return false, nil
 }
 
-func (rq *GovRequisition) Reject() { rq.Status = "Rejected" }
+// Reject declines the requisition at the stage it has reached — see
+// GovVariation.Reject.
+func (rq *GovRequisition) Reject(by, date, reason string) {
+	rq.Status = "Rejected"
+	at := rq.Stage
+	if at >= len(rq.Approvals) {
+		at = len(rq.Approvals) - 1
+	}
+	if at < 0 {
+		return
+	}
+	step := rq.Approvals[at].Step
+	if step == "" && at < len(RequisitionStages) {
+		step = RequisitionStages[at]
+	}
+	rq.Approvals[at] = VariationApproval{Step: step, By: by, Date: date, Note: reason}
+}
 
 type RequisitionInput struct {
 	No                string   `json:"no"`
@@ -163,6 +197,21 @@ type GovObligation struct {
 	Escalation string    `json:"escalation,omitempty"`
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+// ObligationPatch is the PATCH body. Every field is a pointer so that an empty
+// string means "clear this" and an absent key means "leave it alone" — the
+// previous handler treated both as "leave it alone", which made an obligation's
+// owner, evidence and escalation impossible to clear once set.
+type ObligationPatch struct {
+	ContractID *string `json:"contractId,omitempty"`
+	Type       *string `json:"type,omitempty"`
+	Owner      *string `json:"owner,omitempty"`
+	DueDate    *string `json:"dueDate,omitempty"`
+	Frequency  *string `json:"frequency,omitempty"`
+	Evidence   *string `json:"evidence,omitempty"`
+	Status     *string `json:"status,omitempty"`
+	Escalation *string `json:"escalation,omitempty"`
 }
 
 type ObligationInput struct {

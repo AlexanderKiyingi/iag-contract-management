@@ -68,6 +68,19 @@ func NewPayment(id, milestoneID, contractID string, amount int64, retention int)
 	}
 }
 
+// GovPaymentPatch corrects a payment's figures. Stage, status and history are
+// absent: those are the chain's, exactly as for variations and requisitions.
+type GovPaymentPatch struct {
+	Amount    *int64 `json:"amount,omitempty"`
+	Retention *int   `json:"retention,omitempty"`
+}
+
+// RecomputePayable restates the net payable from the amount and retention, so
+// the stored figure can never disagree with the two it is derived from.
+func (p *GovPayment) RecomputePayable() {
+	p.Payable = p.Amount * int64(100-p.Retention) / 100
+}
+
 // Advance completes the current pending stage, returns the index just completed
 // and whether that completion authorizes disbursement / marks paid.
 func (p *GovPayment) Advance(by, date string) (completed int, authorized, paid bool, err error) {
@@ -102,6 +115,10 @@ type VariationApproval struct {
 	Step string `json:"step"`
 	By   string `json:"by,omitempty"`
 	Date string `json:"date,omitempty"`
+	// Note carries the decline reason on the step that rejected. A refusal with
+	// no stated reason leaves the raiser nothing to act on, and the platform
+	// requires one at every other approval gate.
+	Note string `json:"note,omitempty"`
 }
 
 type GovVariation struct {
@@ -119,6 +136,20 @@ type GovVariation struct {
 	Approvals     []VariationApproval `json:"approvals"`
 	CreatedAt     time.Time           `json:"createdAt"`
 	UpdatedAt     time.Time           `json:"updatedAt"`
+}
+
+// GovVariationPatch corrects a variation's own description. Status, stage and
+// approvals are absent on purpose: those belong to /variations/:id/advance and
+// /reject, which enforce sequencing and four-eyes. A patch that could set
+// `status: "Approved"` would walk around both.
+type GovVariationPatch struct {
+	Number        *string `json:"number,omitempty"`
+	Title         *string `json:"title,omitempty"`
+	Amount        *int64  `json:"amount,omitempty"`
+	ExtensionDays *int    `json:"extensionDays,omitempty"`
+	Description   *string `json:"description,omitempty"`
+	Reason        *string `json:"reason,omitempty"`
+	Impact        *string `json:"impact,omitempty"`
 }
 
 // NewVariation builds a Pending variation, auto-recording the first stage
@@ -167,7 +198,23 @@ func (v *GovVariation) Advance(by, date string) (approved bool, err error) {
 }
 
 // Reject terminates the variation.
-func (v *GovVariation) Reject() { v.Status = "Rejected" }
+// Reject declines the variation at the stage it has reached, recording who
+// declined it and why on that step.
+func (v *GovVariation) Reject(by, date, reason string) {
+	v.Status = "Rejected"
+	at := v.Stage
+	if at >= len(v.Approvals) {
+		at = len(v.Approvals) - 1
+	}
+	if at < 0 {
+		return
+	}
+	step := v.Approvals[at].Step
+	if step == "" && at < len(VariationStages) {
+		step = VariationStages[at]
+	}
+	v.Approvals[at] = VariationApproval{Step: step, By: by, Date: date, Note: reason}
+}
 
 // ----- inputs -----
 
@@ -188,4 +235,6 @@ type CreateVariationInput struct {
 
 type WorkflowActionInput struct {
 	By string `json:"by"` // optional actor override; defaults to the session user
+	// Reason is required on a reject and ignored on an advance.
+	Reason string `json:"reason"`
 }

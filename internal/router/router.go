@@ -148,11 +148,13 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.POST("/milestones/:id/payment", wrap(mvc.Governance.CreatePayment))
 	gov.GET("/payments", wrap(mvc.Governance.ListPayments))
 	gov.GET("/payments/:id", wrap(mvc.Governance.GetPayment))
+	gov.PATCH("/payments/:id", wrap(mvc.Governance.PatchPayment))
 	gov.POST("/payments/:id/advance", wrap(mvc.Governance.AdvancePayment))
 	gov.GET("/contracts/:id/variations", wrap(mvc.Governance.ListVariations))
 	gov.POST("/contracts/:id/variations", wrap(mvc.Governance.CreateVariation))
 	gov.GET("/variations", wrap(mvc.Governance.ListAllVariations))
 	gov.GET("/variations/:id", wrap(mvc.Governance.GetVariation))
+	gov.PATCH("/variations/:id", wrap(mvc.Governance.PatchVariation))
 	gov.POST("/variations/:id/advance", wrap(mvc.Governance.AdvanceVariation))
 	gov.POST("/variations/:id/reject", wrap(mvc.Governance.RejectVariation))
 
@@ -161,6 +163,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.GET("/requisitions", wrap(mvc.Governance.ListRequisitions))
 	gov.POST("/requisitions", wrap(mvc.Governance.CreateRequisition))
 	gov.GET("/requisitions/:id", wrap(mvc.Governance.GetRequisition))
+	gov.PATCH("/requisitions/:id", wrap(mvc.Governance.PatchRequisition))
 	gov.POST("/requisitions/:id/advance", wrap(mvc.Governance.AdvanceRequisition))
 	gov.POST("/requisitions/:id/reject", wrap(mvc.Governance.RejectRequisition))
 	gov.POST("/requisitions/:id/convert", wrap(mvc.Governance.ConvertRequisition))
@@ -186,6 +189,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 
 	gov.GET("/budgets", wrap(mvc.Governance.ListBudgets))
 	gov.POST("/budgets", wrap(mvc.Governance.UpsertBudget))
+	gov.PATCH("/budgets/:code", wrap(mvc.Governance.PatchBudget))
 	gov.DELETE("/budgets/:code", wrap(mvc.Governance.DeleteBudget))
 
 	gov.GET("/contracts/:id/closeout", wrap(mvc.Governance.GetCloseout))

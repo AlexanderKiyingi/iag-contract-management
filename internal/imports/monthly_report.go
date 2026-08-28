@@ -174,6 +174,18 @@ func importWorkbook(ctx context.Context, gov *persistence.GovStore, f *excelize.
 			}
 			if prev, ok := existing[strings.ToLower(name)]; ok {
 				v.ID = prev.ID
+				// UpdateValuation replaces the whole row, and the workbook has
+				// no column for any of the commercial fields the app captures.
+				// Without this, re-importing a month blanks every reference,
+				// due date, currency, division, tax, status and attachment on
+				// the valuations that month touches.
+				v.Reference = prev.Reference
+				v.DueDate = prev.DueDate
+				v.Currency = prev.Currency
+				v.Division = prev.Division
+				v.Tax = prev.Tax
+				v.Status = prev.Status
+				v.Attachments = prev.Attachments
 				if _, err := gov.UpdateValuation(ctx, v); err != nil {
 					return res, fmt.Errorf("valuation %q: %w", name, err)
 				}
