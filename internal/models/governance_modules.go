@@ -97,7 +97,23 @@ func (rq *GovRequisition) Advance(by, date string) (approved bool, err error) {
 	return false, nil
 }
 
-func (rq *GovRequisition) Reject() { rq.Status = "Rejected" }
+// Reject declines the requisition at the stage it has reached — see
+// GovVariation.Reject.
+func (rq *GovRequisition) Reject(by, date, reason string) {
+	rq.Status = "Rejected"
+	at := rq.Stage
+	if at >= len(rq.Approvals) {
+		at = len(rq.Approvals) - 1
+	}
+	if at < 0 {
+		return
+	}
+	step := rq.Approvals[at].Step
+	if step == "" && at < len(RequisitionStages) {
+		step = RequisitionStages[at]
+	}
+	rq.Approvals[at] = VariationApproval{Step: step, By: by, Date: date, Note: reason}
+}
 
 type RequisitionInput struct {
 	No                string   `json:"no"`

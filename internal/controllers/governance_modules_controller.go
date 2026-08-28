@@ -202,7 +202,14 @@ func (g *GovernanceController) RejectRequisition(w http.ResponseWriter, r *http.
 	if g.handleErr(w, err) {
 		return
 	}
-	rq.Reject()
+	var in models.WorkflowActionInput
+	_ = decodeJSON(r, &in)
+	reason := strings.TrimSpace(in.Reason)
+	if reason == "" {
+		views.Error(w, http.StatusBadRequest, "a reason is required to reject a requisition")
+		return
+	}
+	rq.Reject(g.actor(r, in.By), nowStamp(), reason)
 	updated, err := g.gov.UpdateRequisition(r.Context(), *rq)
 	if err != nil {
 		views.WriteError(w, err)

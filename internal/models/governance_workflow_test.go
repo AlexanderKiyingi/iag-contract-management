@@ -55,11 +55,17 @@ func TestVariationApprovalChain(t *testing.T) {
 
 func TestVariationReject(t *testing.T) {
 	v := NewVariation("V2", "C1", "VAR-2", "X", 0, 0, "", "", "", "John", "d")
-	v.Reject()
+	v.Reject("Grace", "d2", "scope not funded this quarter")
 	if v.Status != "Rejected" {
 		t.Fatalf("status = %q", v.Status)
 	}
 	if _, err := v.Advance("x", "d"); err != ErrWorkflowComplete {
 		t.Fatal("cannot advance a rejected variation")
+	}
+	// The reason has to land on the step that declined it, or the raiser is
+	// told "rejected" and nothing else.
+	step := v.Approvals[v.Stage]
+	if step.Note != "scope not funded this quarter" || step.By != "Grace" {
+		t.Fatalf("decline not recorded on the current step: %+v", step)
 	}
 }

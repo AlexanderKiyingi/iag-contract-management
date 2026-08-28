@@ -102,6 +102,10 @@ type VariationApproval struct {
 	Step string `json:"step"`
 	By   string `json:"by,omitempty"`
 	Date string `json:"date,omitempty"`
+	// Note carries the decline reason on the step that rejected. A refusal with
+	// no stated reason leaves the raiser nothing to act on, and the platform
+	// requires one at every other approval gate.
+	Note string `json:"note,omitempty"`
 }
 
 type GovVariation struct {
@@ -181,7 +185,23 @@ func (v *GovVariation) Advance(by, date string) (approved bool, err error) {
 }
 
 // Reject terminates the variation.
-func (v *GovVariation) Reject() { v.Status = "Rejected" }
+// Reject declines the variation at the stage it has reached, recording who
+// declined it and why on that step.
+func (v *GovVariation) Reject(by, date, reason string) {
+	v.Status = "Rejected"
+	at := v.Stage
+	if at >= len(v.Approvals) {
+		at = len(v.Approvals) - 1
+	}
+	if at < 0 {
+		return
+	}
+	step := v.Approvals[at].Step
+	if step == "" && at < len(VariationStages) {
+		step = VariationStages[at]
+	}
+	v.Approvals[at] = VariationApproval{Step: step, By: by, Date: date, Note: reason}
+}
 
 // ----- inputs -----
 
@@ -202,4 +222,6 @@ type CreateVariationInput struct {
 
 type WorkflowActionInput struct {
 	By string `json:"by"` // optional actor override; defaults to the session user
+	// Reason is required on a reject and ignored on an advance.
+	Reason string `json:"reason"`
 }

@@ -442,7 +442,14 @@ func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Re
 	if g.handleErr(w, err) {
 		return
 	}
-	v.Reject()
+	var in models.WorkflowActionInput
+	_ = decodeJSON(r, &in)
+	reason := strings.TrimSpace(in.Reason)
+	if reason == "" {
+		views.Error(w, http.StatusBadRequest, "a reason is required to reject a variation")
+		return
+	}
+	v.Reject(g.actor(r, in.By), nowStamp(), reason)
 	updated, err := g.gov.UpdateVariation(r.Context(), *v)
 	if err != nil {
 		views.WriteError(w, err)
@@ -450,5 +457,7 @@ func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Re
 	}
 	g.notifyGovDecision(r.Context(), "Variation "+strings.TrimSpace(updated.Number),
 		updated.ID, "rejected", updated.Stage, "")
+	g.postContractSystem(updated.ContractID,
+		"Variation "+strings.TrimSpace(updated.Number)+" rejected: "+reason)
 	views.JSON(w, http.StatusOK, updated)
 }
