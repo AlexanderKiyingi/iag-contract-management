@@ -202,6 +202,26 @@ func (s *GovStore) UpdateVariation(ctx context.Context, v models.GovVariation) (
 	return vv, err
 }
 
+// UpdateVariationDetails writes the descriptive columns only.
+//
+// UpdateVariation above is the chain writer — it touches status, stage and
+// approvals and nothing else. Correcting a typo in a variation's title must not
+// go anywhere near those, so it gets its own statement rather than a flag on
+// that one.
+func (s *GovStore) UpdateVariationDetails(ctx context.Context, v models.GovVariation) (*models.GovVariation, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE gov_variations SET number=$2, title=$3, amount=$4, extension_days=$5,
+			description=$6, reason=$7, impact=$8, updated_at=NOW()
+		WHERE id=$1
+		RETURNING id, contract_id, number, title, amount, extension_days, description, reason, impact, status, stage, approvals, created_at, updated_at`,
+		v.ID, v.Number, v.Title, v.Amount, v.ExtensionDays, v.Description, v.Reason, v.Impact)
+	vv, err := scanVariation(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return vv, err
+}
+
 // AddContractValue applies a variation's value impact to the contract total.
 func (s *GovStore) AddContractValue(ctx context.Context, contractID string, delta int64) error {
 	_, err := s.pool.Exec(ctx, `UPDATE gov_contracts SET value = value + $2, updated_at = NOW() WHERE id = $1`, contractID, delta)

@@ -10,6 +10,24 @@ import (
 // RequisitionStages is the pre-contract approval chain.
 var RequisitionStages = []string{"Project Manager", "Department Head", "Finance", "Management"}
 
+// GovRequisitionPatch corrects a requisition's own description. As with
+// GovVariationPatch, status/stage/approvals and linkedContract are absent: the
+// chain routes own them.
+type GovRequisitionPatch struct {
+	No                *string `json:"no,omitempty"`
+	Title             *string `json:"title,omitempty"`
+	Department        *string `json:"department,omitempty"`
+	Requester         *string `json:"requester,omitempty"`
+	Type              *string `json:"type,omitempty"`
+	ProcurementMethod *string `json:"procurementMethod,omitempty"`
+	Supplier          *string `json:"supplier,omitempty"`
+	Estimate          *int64  `json:"estimate,omitempty"`
+	BudgetCode        *string `json:"budgetCode,omitempty"`
+	Urgency           *string `json:"urgency,omitempty"`
+	Justification     *string `json:"justification,omitempty"`
+	PMProjectID       *string `json:"pmProjectId,omitempty"`
+}
+
 type GovRequisition struct {
 	ID                string              `json:"id"`
 	No                string              `json:"no"`

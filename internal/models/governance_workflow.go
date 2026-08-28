@@ -121,6 +121,20 @@ type GovVariation struct {
 	UpdatedAt     time.Time           `json:"updatedAt"`
 }
 
+// GovVariationPatch corrects a variation's own description. Status, stage and
+// approvals are absent on purpose: those belong to /variations/:id/advance and
+// /reject, which enforce sequencing and four-eyes. A patch that could set
+// `status: "Approved"` would walk around both.
+type GovVariationPatch struct {
+	Number        *string `json:"number,omitempty"`
+	Title         *string `json:"title,omitempty"`
+	Amount        *int64  `json:"amount,omitempty"`
+	ExtensionDays *int    `json:"extensionDays,omitempty"`
+	Description   *string `json:"description,omitempty"`
+	Reason        *string `json:"reason,omitempty"`
+	Impact        *string `json:"impact,omitempty"`
+}
+
 // NewVariation builds a Pending variation, auto-recording the first stage
 // (Project Manager) as approved by the raiser.
 func NewVariation(id, contractID, number, title string, amount int64, days int, description, reason, impact, raisedBy, date string) GovVariation {

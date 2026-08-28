@@ -116,6 +116,84 @@ func (g *GovernanceController) AdvanceRequisition(w http.ResponseWriter, r *http
 	views.JSON(w, http.StatusOK, updated)
 }
 
+// PatchRequisition corrects a requisition's own description. See PatchVariation
+// for why status, stage, approvals and linkedContract are not reachable here.
+func (g *GovernanceController) PatchRequisition(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "requisitions.update") {
+		return
+	}
+	req, err := g.gov.GetRequisition(r.Context(), pathSegmentAfter(r, "requisitions"))
+	if g.handleErr(w, err) {
+		return
+	}
+	if req.Status != "Pending" {
+		views.Error(w, http.StatusConflict, "this requisition is "+strings.ToLower(req.Status)+" and can no longer be edited")
+		return
+	}
+	var p models.GovRequisitionPatch
+	if err := decodeJSON(r, &p); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	// The estimate is what the approval bands are resolved against, so it is
+	// frozen once anyone beyond the raiser has signed.
+	if req.Stage > 1 && p.Estimate != nil && *p.Estimate != req.Estimate {
+		views.Error(w, http.StatusConflict,
+			"estimate is fixed once an approver has signed — reject and raise a new requisition")
+		return
+	}
+	if p.No != nil {
+		if strings.TrimSpace(*p.No) == "" {
+			views.Error(w, http.StatusBadRequest, "no is required")
+			return
+		}
+		req.No = strings.TrimSpace(*p.No)
+	}
+	if p.Title != nil {
+		if strings.TrimSpace(*p.Title) == "" {
+			views.Error(w, http.StatusBadRequest, "title is required")
+			return
+		}
+		req.Title = strings.TrimSpace(*p.Title)
+	}
+	if p.Department != nil {
+		req.Department = *p.Department
+	}
+	if p.Requester != nil {
+		req.Requester = *p.Requester
+	}
+	if p.Type != nil {
+		req.Type = *p.Type
+	}
+	if p.ProcurementMethod != nil {
+		req.ProcurementMethod = *p.ProcurementMethod
+	}
+	if p.Supplier != nil {
+		req.Supplier = *p.Supplier
+	}
+	if p.Estimate != nil {
+		req.Estimate = *p.Estimate
+	}
+	if p.BudgetCode != nil {
+		req.BudgetCode = *p.BudgetCode
+	}
+	if p.Urgency != nil {
+		req.Urgency = *p.Urgency
+	}
+	if p.Justification != nil {
+		req.Justification = *p.Justification
+	}
+	if p.PMProjectID != nil {
+		req.PMProjectID = *p.PMProjectID
+	}
+	updated, err := g.gov.UpdateRequisitionDetails(r.Context(), *req)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, updated)
+}
+
 func (g *GovernanceController) RejectRequisition(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "requisitions.update") {
 		return

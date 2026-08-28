@@ -70,6 +70,23 @@ func (s *GovStore) UpdateRequisition(ctx context.Context, r models.GovRequisitio
 	return rr, err
 }
 
+// UpdateRequisitionDetails writes the descriptive columns only — see the note
+// on UpdateVariationDetails for why this is separate from the chain writer.
+func (s *GovStore) UpdateRequisitionDetails(ctx context.Context, r models.GovRequisition) (*models.GovRequisition, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE gov_requisitions SET no=$2, title=$3, department=$4, requester=$5, type=$6,
+			procurement_method=$7, supplier=$8, estimate=$9, budget_code=$10, urgency=$11,
+			justification=$12, pm_project_id=$13, updated_at=NOW()
+		WHERE id=$1 RETURNING `+reqCols,
+		r.ID, r.No, r.Title, r.Department, r.Requester, r.Type, r.ProcurementMethod, r.Supplier,
+		r.Estimate, r.BudgetCode, r.Urgency, r.Justification, r.PMProjectID)
+	rr, err := scanReq(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return rr, err
+}
+
 func (s *GovStore) DeleteRequisition(ctx context.Context, idOrNo string) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM gov_requisitions WHERE id=$1 OR no=$1`, idOrNo)
 	if err != nil {

@@ -359,6 +359,81 @@ func (g *GovernanceController) notifyGovDecision(ctx context.Context, what, id, 
 	}, id)
 }
 
+// PatchVariation corrects a variation's own description.
+//
+// There was no way to fix a typo in a variation once raised: the only write
+// verbs were advance and reject, so the app offered an edit form whose save
+// could only 405. Correcting the text is not the same act as approving it, and
+// this deliberately cannot touch status, stage or approvals.
+//
+// Two limits, both because an approval is an approval of something specific:
+// a variation that has left Pending is finished, and the amount and time
+// extension — the two figures an approver actually weighed — are frozen once
+// anyone beyond the raiser has signed.
+func (g *GovernanceController) PatchVariation(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "variations.update") {
+		return
+	}
+	v, err := g.gov.GetVariation(r.Context(), pathSegmentAfter(r, "variations"))
+	if g.handleErr(w, err) {
+		return
+	}
+	if v.Status != "Pending" {
+		views.Error(w, http.StatusConflict, "this variation is "+strings.ToLower(v.Status)+" and can no longer be edited")
+		return
+	}
+	var p models.GovVariationPatch
+	if err := decodeJSON(r, &p); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	// Stage 1 means only the raiser's own auto-approval is recorded.
+	frozen := v.Stage > 1
+	if frozen {
+		if (p.Amount != nil && *p.Amount != v.Amount) ||
+			(p.ExtensionDays != nil && *p.ExtensionDays != v.ExtensionDays) {
+			views.Error(w, http.StatusConflict,
+				"amount and extensionDays are fixed once an approver has signed — reject and raise a new variation")
+			return
+		}
+	}
+	if p.Number != nil {
+		if strings.TrimSpace(*p.Number) == "" {
+			views.Error(w, http.StatusBadRequest, "number is required")
+			return
+		}
+		v.Number = strings.TrimSpace(*p.Number)
+	}
+	if p.Title != nil {
+		if strings.TrimSpace(*p.Title) == "" {
+			views.Error(w, http.StatusBadRequest, "title is required")
+			return
+		}
+		v.Title = strings.TrimSpace(*p.Title)
+	}
+	if p.Amount != nil {
+		v.Amount = *p.Amount
+	}
+	if p.ExtensionDays != nil {
+		v.ExtensionDays = *p.ExtensionDays
+	}
+	if p.Description != nil {
+		v.Description = *p.Description
+	}
+	if p.Reason != nil {
+		v.Reason = *p.Reason
+	}
+	if p.Impact != nil {
+		v.Impact = *p.Impact
+	}
+	updated, err := g.gov.UpdateVariationDetails(r.Context(), *v)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, updated)
+}
+
 func (g *GovernanceController) RejectVariation(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "variations.update") {
 		return
