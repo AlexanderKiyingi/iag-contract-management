@@ -148,6 +148,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	gov.POST("/milestones/:id/payment", wrap(mvc.Governance.CreatePayment))
 	gov.GET("/payments", wrap(mvc.Governance.ListPayments))
 	gov.GET("/payments/:id", wrap(mvc.Governance.GetPayment))
+	gov.PATCH("/payments/:id", wrap(mvc.Governance.PatchPayment))
 	gov.POST("/payments/:id/advance", wrap(mvc.Governance.AdvancePayment))
 	gov.GET("/contracts/:id/variations", wrap(mvc.Governance.ListVariations))
 	gov.POST("/contracts/:id/variations", wrap(mvc.Governance.CreateVariation))

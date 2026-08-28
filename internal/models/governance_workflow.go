@@ -68,6 +68,19 @@ func NewPayment(id, milestoneID, contractID string, amount int64, retention int)
 	}
 }
 
+// GovPaymentPatch corrects a payment's figures. Stage, status and history are
+// absent: those are the chain's, exactly as for variations and requisitions.
+type GovPaymentPatch struct {
+	Amount    *int64 `json:"amount,omitempty"`
+	Retention *int   `json:"retention,omitempty"`
+}
+
+// RecomputePayable restates the net payable from the amount and retention, so
+// the stored figure can never disagree with the two it is derived from.
+func (p *GovPayment) RecomputePayable() {
+	p.Payable = p.Amount * int64(100-p.Retention) / 100
+}
+
 // Advance completes the current pending stage, returns the index just completed
 // and whether that completion authorizes disbursement / marks paid.
 func (p *GovPayment) Advance(by, date string) (completed int, authorized, paid bool, err error) {

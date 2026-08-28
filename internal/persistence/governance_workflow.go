@@ -61,6 +61,24 @@ func (s *GovStore) UpdatePayment(ctx context.Context, p models.GovPayment) (*mod
 	return pp, err
 }
 
+// UpdatePaymentAmounts writes the money columns only.
+//
+// UpdatePayment above is the chain writer (stage, status, history). Correcting
+// a payment's figures before anyone has approved it is a different act and gets
+// its own statement, so a correction can never disturb the chain.
+func (s *GovStore) UpdatePaymentAmounts(ctx context.Context, p models.GovPayment) (*models.GovPayment, error) {
+	row := s.pool.QueryRow(ctx, `
+		UPDATE gov_payments SET amount=$2, retention=$3, payable=$4, updated_at=NOW()
+		WHERE id=$1
+		RETURNING id, milestone_id, contract_id, amount, retention, payable, stage, status, history, created_at, updated_at`,
+		p.ID, p.Amount, p.Retention, p.Payable)
+	pp, err := scanPayment(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGovNotFound
+	}
+	return pp, err
+}
+
 // ListPayments returns the payment queue across all milestones, newest first,
 // with optional contract and status filters (the basis for the finance payment
 // dashboard). An empty filter matches everything.

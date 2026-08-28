@@ -110,6 +110,55 @@ func (g *GovernanceController) GetPayment(w http.ResponseWriter, r *http.Request
 // AdvancePayment completes the current pending stage. Authorizing the payment
 // emits an event finance consumes to book the AP; marking paid flips the
 // milestone to Paid.
+// PatchPayment corrects a payment's amount or retention before anyone has
+// approved it.
+//
+// A payment is raised from its milestone with the milestone's value and the
+// contract's retention, and those defaults are sometimes wrong for the
+// certificate actually being paid. Stage 0 means no approver has looked at it
+// yet; from stage 1 the figures are what someone signed for, and the answer is
+// to let the chain finish or raise a new payment.
+func (g *GovernanceController) PatchPayment(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "payments.update") {
+		return
+	}
+	p, err := g.gov.GetPayment(r.Context(), pathSegmentAfter(r, "payments"))
+	if g.handleErr(w, err) {
+		return
+	}
+	if p.Stage > 0 {
+		views.Error(w, http.StatusConflict,
+			"this payment has been approved at "+p.Status+" — its figures are fixed")
+		return
+	}
+	var in models.GovPaymentPatch
+	if err := decodeJSON(r, &in); err != nil {
+		views.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if in.Amount != nil {
+		if *in.Amount < 0 {
+			views.Error(w, http.StatusBadRequest, "amount cannot be negative")
+			return
+		}
+		p.Amount = *in.Amount
+	}
+	if in.Retention != nil {
+		if *in.Retention < 0 || *in.Retention > 100 {
+			views.Error(w, http.StatusBadRequest, "retention must be a percentage between 0 and 100")
+			return
+		}
+		p.Retention = *in.Retention
+	}
+	p.RecomputePayable()
+	updated, err := g.gov.UpdatePaymentAmounts(r.Context(), *p)
+	if err != nil {
+		views.WriteError(w, err)
+		return
+	}
+	views.JSON(w, http.StatusOK, updated)
+}
+
 func (g *GovernanceController) AdvancePayment(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "payments.update") {
 		return
