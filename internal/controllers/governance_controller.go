@@ -234,6 +234,25 @@ func (g *GovernanceController) PatchContract(w http.ResponseWriter, r *http.Requ
 		views.Error(w, http.StatusBadRequest, "invalid executionStatus")
 		return
 	}
+	if p.Number != nil {
+		number := strings.TrimSpace(*p.Number)
+		if number == "" {
+			views.Error(w, http.StatusBadRequest, "number cannot be blank")
+			return
+		}
+		if number != existing.Number {
+			taken, err := g.gov.ContractNumberTaken(r.Context(), number, existing.ID)
+			if err != nil {
+				views.WriteError(w, err)
+				return
+			}
+			if taken {
+				views.Error(w, http.StatusConflict, "a contract with number "+number+" already exists")
+				return
+			}
+		}
+		p.Number = &number
+	}
 
 	applyContractPatch(existing, p)
 	if statusChanged {
@@ -457,6 +476,9 @@ func (g *GovernanceController) publishPMProjectLink(r *http.Request, c models.Go
 func nowStamp() string { return time.Now().UTC().Format("02 Jan 2006 15:04") }
 
 func applyContractPatch(c *models.GovContract, p models.GovContractPatch) {
+	if p.Number != nil {
+		c.Number = *p.Number
+	}
 	if p.Name != nil {
 		c.Name = *p.Name
 	}

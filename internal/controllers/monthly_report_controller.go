@@ -185,11 +185,10 @@ func (g *GovernanceController) ListReportsByPeriod(w http.ResponseWriter, r *htt
 	if !requirePerm(r.Context(), g.model, w, "progressreports.read") {
 		return
 	}
+	// No period lists the whole portfolio (newest period first). The register
+	// screen in the Contract Manager app has no period to ask with; requiring
+	// one here left that tab reading 400 and rendering empty.
 	period := strings.TrimSpace(r.URL.Query().Get("period"))
-	if period == "" {
-		views.Error(w, http.StatusBadRequest, "period query parameter is required")
-		return
-	}
 	list, err := g.gov.ListProgressReportsByPeriod(r.Context(), period)
 	if err != nil {
 		views.WriteError(w, err)
