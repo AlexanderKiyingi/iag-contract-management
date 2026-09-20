@@ -126,7 +126,11 @@ func (g *GovernanceController) PatchRequisition(w http.ResponseWriter, r *http.R
 	if g.handleErr(w, err) {
 		return
 	}
-	if req.Status != "Pending" {
+	// A requisition opens as "Pending Approval" (NewRequisition), not
+	// "Pending" — the variation chain's word. Guarding on the wrong one made
+	// every raised requisition uneditable from the moment it was raised, which
+	// is the opposite of what this handler exists for.
+	if req.Status != "Pending Approval" {
 		views.Error(w, http.StatusConflict, "this requisition is "+strings.ToLower(req.Status)+" and can no longer be edited")
 		return
 	}
