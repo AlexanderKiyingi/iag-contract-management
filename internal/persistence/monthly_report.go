@@ -95,7 +95,7 @@ func (s *GovStore) UpdateContractor(ctx context.Context, c models.GovContractor)
 func (s *GovStore) DeleteContractor(ctx context.Context, id string) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM gov_contractors WHERE id=$1`, id)
 	if err != nil {
-		return err
+		return refusedByReference(err)
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrGovNotFound
@@ -149,6 +149,20 @@ func (s *GovStore) CreateProjectManager(ctx context.Context, pm models.GovProjec
 		RETURNING `+projectManagerCols,
 		pm.ID, pm.Name, pm.Email)
 	return scanProjectManager(row)
+}
+
+// DeleteProjectManager removes a PM from the dropdown source. Contracts name
+// their PM by text (gov_contracts.pm), not by id, so nothing references the
+// row and nothing is orphaned by removing it.
+func (s *GovStore) DeleteProjectManager(ctx context.Context, id string) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM gov_project_managers WHERE id=$1`, id)
+	if err != nil {
+		return refusedByReference(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrGovNotFound
+	}
+	return nil
 }
 
 func scanProjectManager(row pgx.Row) (*models.GovProjectManager, error) {

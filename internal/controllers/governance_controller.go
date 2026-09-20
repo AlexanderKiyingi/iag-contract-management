@@ -415,6 +415,10 @@ func (g *GovernanceController) handleErr(w http.ResponseWriter, err error) bool 
 		views.Error(w, http.StatusNotFound, "not found")
 		return true
 	}
+	if errors.Is(err, persistence.ErrGovInUse) {
+		views.Error(w, http.StatusConflict, "still referenced by contracts or valuations; remove those first")
+		return true
+	}
 	views.WriteError(w, err)
 	return true
 }

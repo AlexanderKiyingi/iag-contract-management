@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/alvor-technologies/iag-contract-management/internal/models"
@@ -45,6 +46,22 @@ func (s *GovStore) NextRequisitionNo(ctx context.Context) (string, error) {
 
 // ErrGovNotFound is returned when a governance contract/milestone is absent.
 var ErrGovNotFound = errors.New("not found")
+
+// ErrGovInUse is returned when a delete is refused because other rows still
+// point at the one being removed — a contractor with contracts or valuations
+// (migration 023's RESTRICT foreign keys). It is the caller's row that is in
+// the way, not the service, so it maps to 409 rather than 500.
+var ErrGovInUse = errors.New("still referenced by other records")
+
+// refusedByReference turns Postgres's foreign-key violation (23503) into
+// ErrGovInUse and leaves every other error as it is.
+func refusedByReference(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+		return ErrGovInUse
+	}
+	return err
+}
 
 // GovStore persists the contract-governance domain (gov_contracts,
 // gov_milestones). Nested value objects are stored as JSONB so the rich UI

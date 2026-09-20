@@ -228,6 +228,7 @@ func registerRoutes(g *gin.RouterGroup, mvc *app.MVC, hub *realtime.Hub) {
 	// Project managers — governed dropdown source for the contract form.
 	gov.GET("/project-managers", wrap(mvc.Governance.ListProjectManagers))
 	gov.POST("/project-managers", wrap(mvc.Governance.CreateProjectManager))
+	gov.DELETE("/project-managers/:id", wrap(mvc.Governance.DeleteProjectManager))
 
 	gov.GET("/contracts/:id/reports", wrap(mvc.Governance.ListContractReports))
 	gov.PUT("/contracts/:id/reports", wrap(mvc.Governance.UpsertContractReport))
