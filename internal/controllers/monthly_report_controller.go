@@ -119,6 +119,16 @@ func (g *GovernanceController) CreateProjectManager(w http.ResponseWriter, r *ht
 	views.JSON(w, http.StatusCreated, created)
 }
 
+func (g *GovernanceController) DeleteProjectManager(w http.ResponseWriter, r *http.Request) {
+	if !requirePerm(r.Context(), g.model, w, "contracts.update") {
+		return
+	}
+	if g.handleErr(w, g.gov.DeleteProjectManager(r.Context(), pathSegmentAfter(r, "project-managers"))) {
+		return
+	}
+	views.NoContent(w)
+}
+
 func (g *GovernanceController) PatchContractor(w http.ResponseWriter, r *http.Request) {
 	if !requirePerm(r.Context(), g.model, w, "contractors.update") {
 		return
