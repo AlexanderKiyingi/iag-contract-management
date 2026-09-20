@@ -201,9 +201,20 @@ func (s *GovStore) ListProgressReports(ctx context.Context, contractID string) (
 }
 
 // ListProgressReportsByPeriod returns every contract's report for one period —
-// the basis for the monthly rollup.
+// the basis for the monthly rollup. An empty period returns every report,
+// newest period first: the Contract Manager register lists the portfolio's
+// reports with no period in hand, and the only alternative it had was one
+// round trip per contract.
 func (s *GovStore) ListProgressReportsByPeriod(ctx context.Context, period string) ([]models.ProgressReport, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+progressCols+` FROM gov_progress_reports WHERE period=$1`, period)
+	var (
+		rows pgx.Rows
+		err  error
+	)
+	if period == "" {
+		rows, err = s.pool.Query(ctx, `SELECT `+progressCols+` FROM gov_progress_reports ORDER BY period DESC, contract_id`)
+	} else {
+		rows, err = s.pool.Query(ctx, `SELECT `+progressCols+` FROM gov_progress_reports WHERE period=$1`, period)
+	}
 	if err != nil {
 		return nil, err
 	}
