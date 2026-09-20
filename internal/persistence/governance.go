@@ -144,17 +144,28 @@ func (s *GovStore) UpdateContract(ctx context.Context, c models.GovContract) (*m
 			start_date=NULLIF($7,''), end_date=NULLIF($8,''), location=$9, pm=$10, department=$11,
 			value=$12, retention=$13, status=$14, execution_status=$15, progress=$16, received=$17,
 			variation_total=$18, planned_completion=NULLIF($19,''), documents=$20::jsonb, activity=$21::jsonb,
-			pm_project_id=$22, conversation_id=$23, currency=COALESCE(NULLIF($24,''),'UGX'), updated_at=NOW()
+			pm_project_id=$22, conversation_id=$23, currency=COALESCE(NULLIF($24,''),'UGX'),
+			number=$25, updated_at=NOW()
 		WHERE id=$1
 		RETURNING `+govContractCols,
 		c.ID, c.Name, c.Contractor, c.ContractorID, c.ContractorContact, c.Type, c.StartDate, c.EndDate,
 		c.Location, c.PM, c.Department, c.Value, c.Retention, string(c.Status), exec, c.Progress, c.Received,
-		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID, c.Currency)
+		c.VariationTotal, c.PlannedCompletion, docs, act, c.PMProjectID, c.ConversationID, c.Currency, c.Number)
 	cc, err := scanGovContract(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGovNotFound
 	}
 	return cc, err
+}
+
+// ContractNumberTaken reports whether another contract already carries this
+// number. `number` is UNIQUE in the table; asking first turns what would be a
+// constraint error into a 409 the caller can act on.
+func (s *GovStore) ContractNumberTaken(ctx context.Context, number, excludeID string) (bool, error) {
+	var n int
+	err := s.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM gov_contracts WHERE number=$1 AND id<>$2`, number, excludeID).Scan(&n)
+	return n > 0, err
 }
 
 // SetContractConversationID records the chat thread id, but only if one is not

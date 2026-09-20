@@ -215,6 +215,8 @@ type ObligationPatch struct {
 }
 
 type ObligationInput struct {
+	// ContractID is accepted and ignored — see GovMilestoneInput.
+	ContractID string `json:"contractId"`
 	Type       string `json:"type"`
 	Owner      string `json:"owner"`
 	DueDate    string `json:"dueDate"`

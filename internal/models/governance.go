@@ -273,6 +273,10 @@ type GovContractInput struct {
 }
 
 type GovContractPatch struct {
+	// Number is the human contract code. It is unique, so a change is checked
+	// against the register before it is applied; blank is refused rather than
+	// read as "clear it".
+	Number            *string          `json:"number,omitempty"`
 	Name              *string          `json:"name,omitempty"`
 	Contractor        *string          `json:"contractor,omitempty"`
 	ContractorID      *string          `json:"contractorId,omitempty"`
@@ -297,6 +301,11 @@ type GovContractPatch struct {
 }
 
 type GovMilestoneInput struct {
+	// ContractID is accepted and ignored: the create route carries the
+	// contract in its path (`POST /contracts/:id/milestones`), and a client
+	// that echoes the row's field back must not be refused for it — the
+	// decoder rejects unknown keys, so without this the whole create failed.
+	ContractID   string          `json:"contractId"`
 	Name         string          `json:"name"`
 	Value        int64           `json:"value"`
 	TargetDate   string          `json:"targetDate"`
