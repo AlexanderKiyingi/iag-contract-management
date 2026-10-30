@@ -16,6 +16,11 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
+// migrateLockSQL serialises migration runs across replicas. It is
+// transaction-scoped, so it works through pgbouncer's transaction pooling and
+// releases itself on commit or rollback.
+const migrateLockSQL = `SELECT pg_advisory_xact_lock(hashtext('contracts.schema_migrations'))`
+
 // RunMigrations applies every migrations/*.up.sql file in lex order, tracking
 // applied versions in schema_migrations. Each file's basename (minus the
 // .up.sql suffix) is the version key.
@@ -39,20 +44,38 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	// service's global public.schema_migrations (the collision that caused
 	// cross-service boot failures). Connect pins search_path to `contracts,
 	// public`.
-	if _, err := pool.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS contracts`); err != nil {
+	//
+	// CREATE … IF NOT EXISTS is not safe against a concurrent CREATE of the same
+	// name (both pass the check, one hits a unique violation), so the bootstrap
+	// runs under the same lock as the migrations.
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, migrateLockSQL); err != nil {
+		_ = tx.Rollback(ctx)
+		return fmt.Errorf("migration bootstrap lock: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS contracts`); err != nil {
+		_ = tx.Rollback(ctx)
 		return fmt.Errorf("create schema contracts: %w", err)
 	}
-	if _, err := pool.Exec(ctx, `
+	if _, err := tx.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS contracts.schema_migrations (
 			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			checksum TEXT NOT NULL DEFAULT ''
 		)
 	`); err != nil {
+		_ = tx.Rollback(ctx)
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
-	if _, err := pool.Exec(ctx, `ALTER TABLE contracts.schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`); err != nil {
+	if _, err := tx.Exec(ctx, `ALTER TABLE contracts.schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`); err != nil {
+		_ = tx.Rollback(ctx)
 		return fmt.Errorf("ensure schema_migrations.checksum: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
 	}
 
 	entries, err := migrationFS.ReadDir("migrations")
@@ -79,14 +102,12 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("seed from legacy ledger: %w", err)
 	}
 
+	const appliedSQL = `SELECT EXISTS(SELECT 1 FROM contracts.schema_migrations WHERE version = $1)`
 	for _, name := range files {
 		version := strings.TrimSuffix(name, ".up.sql")
 
 		var applied bool
-		if err := pool.QueryRow(ctx,
-			`SELECT EXISTS(SELECT 1 FROM contracts.schema_migrations WHERE version = $1)`,
-			version,
-		).Scan(&applied); err != nil {
+		if err := pool.QueryRow(ctx, appliedSQL, version).Scan(&applied); err != nil {
 			return fmt.Errorf("check %s: %w", version, err)
 		}
 		if applied {
@@ -104,6 +125,22 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		tx, err := pool.Begin(ctx)
 		if err != nil {
 			return err
+		}
+		// Replicas starting together all see the migration as pending. The
+		// transaction-scoped lock serialises them; whoever waited re-checks and
+		// skips what the winner already applied instead of failing on a
+		// duplicate object.
+		if _, err := tx.Exec(ctx, migrateLockSQL); err != nil {
+			_ = tx.Rollback(ctx)
+			return fmt.Errorf("%s lock: %w", version, err)
+		}
+		if err := tx.QueryRow(ctx, appliedSQL, version).Scan(&applied); err != nil {
+			_ = tx.Rollback(ctx)
+			return fmt.Errorf("check %s: %w", version, err)
+		}
+		if applied {
+			_ = tx.Rollback(ctx)
+			continue
 		}
 		// QueryExecModeSimpleProtocol forces the underlying query into the
 		// PostgreSQL simple query protocol, which permits multi-statement
